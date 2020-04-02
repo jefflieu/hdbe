@@ -11,10 +11,14 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
+#include "loguru/loguru.hpp"
 
-#define println(LN) outs() << LN << '\n'
+#include "ControlStep.hpp"
+#include "Scheduler.hpp"
+
 
 using namespace llvm;
+using namespace hdlbe;
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -25,35 +29,15 @@ int main(int argc, char **argv) {
   // Parse the input LLVM IR file into a module.
   SMDiagnostic Err;
   LLVMContext Context;
-  std::unique_ptr<Module> Mod(parseIRFile(argv[1], Err, Context));
+  std::unique_ptr<Module> Mod(parseIRFile(argv[1], Err, Context));  
   if (!Mod) {
     Err.print(argv[0], errs());
     return 1;
   }
-
-  // Go over all named mdnodes in the module
-  for (Module::const_iterator I = Mod->begin(),
-                                             E = Mod->end();
-       I != E; ++I) {
-    
-    // These dumps only work with LLVM built with a special cmake flag enabling
-    // dumps.
-    //I->dump();
-    outs() << "Found Function: " << I->getName() << '\n';
-    println("Arguments :");
-    for(Function::const_arg_iterator ai = I->arg_begin(), ae = I->arg_end(); ai != ae; ++ai)
-    {
-      ai->dump();
-    }
-
-    for(Function::const_iterator bbi = I->begin(), bbe = I->end(); bbi != bbe ; ++bbi)
-    {
-      for(BasicBlock::const_iterator ins_i = bbi->begin(), instruction_end = bbi->end(); ins_i != instruction_end; ++ ins_i)
-      {
-        ins_i->dump();
-      }
-    }
-  }
+  
+  Scheduler& scheduler = *(new AsapScheduler(Mod.get()));
+  SchedulingAlgorithm algo;
+  scheduler.schedule(algo, "fibo");
 
   return 0;
 }

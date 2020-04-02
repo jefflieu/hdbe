@@ -33,3 +33,13 @@ int fibo(int a)
   } else
     return a;
 }
+
+int pointers(int * a, int size, int patt)
+{
+  int i;
+  for1: for(i = 0; i < size; i++)
+  {
+    if (a[i] == patt) break;
+  }
+  return i;
+}

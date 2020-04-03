@@ -11,8 +11,12 @@ class ControlStep;
 typedef llvm::Instruction* Instruction_h;
 typedef llvm::Module* Module_h ;
 typedef ControlStep* ControlStep_h;
+typedef llvm::Function* Function_h;
 
-#define GET_HANDLE_FROM_UNIQUE_PTR( u_ptr ) (&(*u_ptr))
+template<typename T>
+std::string GetName(T* irObject) {return (irObject->getName()).str();}
 
+template<typename T>
+std::string GetName(T& irObject) {return (irObject.getName()).str();}
 }
 

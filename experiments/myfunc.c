@@ -43,3 +43,9 @@ int pointers(int * a, int size, int patt)
   }
   return i;
 }
+
+int main(void)
+{
+  int array[10];
+  return pointers(array, 10, 0x1234);  
+}

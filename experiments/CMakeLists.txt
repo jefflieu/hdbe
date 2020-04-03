@@ -4,13 +4,13 @@ project(ir_parser)
 find_package(LLVM REQUIRED CONFIG)
 
 set(dep_root ../..)
-set(hdlbe_src ../src)
+set(hdlbe_src ../src/)
+
+
 
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
-
-#add_library(loguru STATIC ${dep_root}/loguru/loguru.cpp)
-#add_library(hdlbe  STATIC ${hdlbe_src}/SchedulingAlgorithm.cpp)
+message(STATUS "Using LLVM_DEFINITIONS   : ${LLVM_DEFINITIONS}")
 
 # Set your project compile flags.
 # E.g. if using the C++ header files
@@ -19,13 +19,17 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 include_directories(${LLVM_INCLUDE_DIRS} ${dep_root} ${hdlbe_src})
 add_definitions(${LLVM_DEFINITIONS})
+add_definitions(-DLOGURU_WITH_STREAMS=1)
 
 # Now build our tools
-add_executable(ir_parser ir_parser.cpp ${hdlbe_src}/SchedulingAlgorithm.cpp)
+add_executable(ir_parser ir_parser.cpp )
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
-llvm_map_components_to_libnames(llvm_libs support core irreader)
+llvm_map_components_to_libnames(llvm_libs support core irreader analysis)
 
 # Link against LLVM libraries
-target_link_libraries(ir_parser ${llvm_libs})
+target_link_libraries(ir_parser ${llvm_libs} )
+target_sources(ir_parser PUBLIC  
+    ${dep_root}/loguru/loguru.cpp
+    ${hdlbe_src}/SchedulingAlgorithm.cpp)

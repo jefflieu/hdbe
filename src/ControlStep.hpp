@@ -12,7 +12,7 @@ class ControlStep : public BaseClass {
     bool isBranchNode;
     std::list<ControlStep_h> preds;
     std::list<ControlStep_h> succs;
-    std::list<Instruction_h> scheduledInstructions;    
+    std::list<Const_Instruction_h> scheduledInstructions;    
     std::string idString;
     
   
@@ -24,7 +24,7 @@ class ControlStep : public BaseClass {
 
     bool isBranch() {return isBranchNode;};
     
-    bool bindInstruction(llvm::Instruction* instruction) {      
+    bool addInstruction(Const_Instruction_h instruction) {      
       scheduledInstructions.push_back(instruction);
     }
   

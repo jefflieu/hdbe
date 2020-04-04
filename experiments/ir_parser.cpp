@@ -17,18 +17,23 @@
 #include "loguru/loguru.hpp"
 #include "ControlStep.hpp"
 #include "Scheduler.hpp"
-
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/Analysis/DDG.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
 
 using namespace llvm;
 using namespace hdlbe;
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    errs() << "Usage: " << argv[0] << " <IR file>\n";
+    errs() << "Usage: " << argv[0] << " [Options] <IR file> [functionName]\n";
     return 1;
   }
-
+  
+  /*Setup log from Loguru */
   // Only show most relevant things on stderr:
+  loguru::g_internal_verbosity = loguru::Verbosity_MAX;
   loguru::g_stderr_verbosity = 1;
   loguru::g_preamble_date    = 0;
   loguru::g_preamble_time    = 1;
@@ -37,6 +42,7 @@ int main(int argc, char **argv) {
   loguru::g_preamble_file    = 1;
 
   // Put every log message in "everything.log":
+  loguru::init(argc, argv);
   loguru::add_file("everything.log", loguru::Append, loguru::Verbosity_MAX);
   // Only log INFO, WARNING, ERROR and FATAL to "latest_readable.log":
   loguru::add_file("latest_readable.log", loguru::Truncate, loguru::Verbosity_INFO);
@@ -59,18 +65,19 @@ int main(int argc, char **argv) {
   SMDiagnostic Err;
   LLVMContext Context;
   std::unique_ptr<Module> Mod(parseIRFile(argv[1], Err, Context));  
+  std::string  funcName = argv[2];
   if (!Mod) {
     Err.print(argv[0], errs());
     return 1;
   }
-
-  std::string funcName = "pointers";
-
-  CallGraph callGraph(*Mod);
-  Function* func = Mod->getFunction(funcName);  
-   
-
-  Scheduler& scheduler = *(new AsapScheduler(Mod.get()));
+  
+  
+  
+  //CallGraph callGraph(*Mod);
+  //Function* func = Mod->getFunction(funcName);  
+  
+  
+  Scheduler& scheduler = *(new SimpleScheduler(Mod.get()));
   SchedulingAlgorithm algo;
   scheduler.schedule(algo, funcName);
 

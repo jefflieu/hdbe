@@ -3,6 +3,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Module.h"
+#include "loguru/loguru.hpp"
 
 namespace hdlbe {
 
@@ -25,5 +26,9 @@ template<typename T>
 std::string GetName(T& irObject) {return (irObject.getName()).str();}
 
 #define D_GET_PTR(iter) (&(*iter))
+
+#define LLVM_LOG(level, out_msg) do { if (loguru::g_stderr_verbosity >= level) llvm::outs() << out_msg; } while(0)
+
+
 }
 

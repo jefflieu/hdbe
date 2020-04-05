@@ -4,6 +4,7 @@
 #include <stdint.h> 
 #include <iostream>
 
+#include "HardwareDescription.hpp"
 #include "BaseClass.hpp"
 #include "types.hpp"
 
@@ -11,6 +12,8 @@
 #include "llvm/Analysis/DDG.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/raw_ostream.h"
+
 
 namespace hdlbe {
 
@@ -24,7 +27,8 @@ class Scheduler : public BaseClass {
     llvm::PassBuilder PB;
     llvm::FunctionAnalysisManager FAM;            
     llvm::DataDependenceGraph  *DDG;
-    
+    hdlbe::HardwareDescription HWD;
+
   public: 
     Scheduler (Module_h _irModule) : m_irModule(_irModule) {PB.registerFunctionAnalyses(FAM);};
     ~Scheduler() {delete DDG;};
@@ -37,6 +41,7 @@ class Scheduler : public BaseClass {
       llvm::DependenceAnalysis DA;  
       llvm::DependenceInfo DI   = DA.run(*F, FAM);
       DDG = new llvm::DataDependenceGraph(*F, DI);
+      //LLVM_LOG(6, *DDG);
     }
   
 };

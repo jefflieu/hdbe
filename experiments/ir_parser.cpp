@@ -23,7 +23,7 @@
 #include "llvm/Passes/PassBuilder.h"
 
 using namespace llvm;
-using namespace hdlbe;
+using namespace hdbe;
 
 int main(int argc, char **argv) {
   if (argc < 2) {

@@ -4,7 +4,7 @@
 
 #include "BaseClass.hpp"
 
-namespace hdlbe {
+namespace hdbe {
 
 class ControlStep : public BaseClass {
   

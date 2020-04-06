@@ -8,7 +8,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 
-namespace hdlbe {
+namespace hdbe {
 
 class HardwareDescription : public BaseClass {
   

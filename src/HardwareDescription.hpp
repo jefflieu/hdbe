@@ -21,6 +21,7 @@ class HardwareDescription : public BaseClass {
 
     float getLatency(const llvm::Instruction* instruction)
     {
+      if (instruction->isTerminator()) return 0.0;
       switch(instruction->getOpcode()) 
       {
         case llvm::Instruction::Load : return 0.0;

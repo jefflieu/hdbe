@@ -17,6 +17,7 @@
 #include "loguru/loguru.hpp"
 #include "ControlStep.hpp"
 #include "Scheduler.hpp"
+#include "CodeGenerator.hpp"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/DDG.h"
 #include "llvm/IR/PassManager.h"
@@ -77,10 +78,11 @@ int main(int argc, char **argv) {
   //Function* func = Mod->getFunction(funcName);  
   
   
-  Scheduler& scheduler = *(new SimpleScheduler(Mod.get()));
+  SimpleScheduler scheduler(Mod.get());
   SchedulingAlgorithm algo;
   scheduler.schedule(algo, funcName);
-
+  VhdlGenerator vhdlGen(&scheduler);
+  vhdlGen.write();
   
   
   LOG_F(INFO, "Program ends .. "); 

@@ -1,0 +1,30 @@
+
+#define VHDL_DECL_LIBRARY "\n\
+library ieee; \n\
+use ieee.std_logic_1164.all; \n\
+use ieee.std_logic_unsigned.all;\n\
+use ieee.numeric_std.all; \n\n"
+
+
+#define VHDL_DECL_ENTITY(__name) \
+"entity " << __name << " is \n\n\
+  port ( \n" 
+
+
+#define VHDL_HDBE_PORTS "\
+    func_start                :  in bit;\n\
+    func_done                 : out bit;\n\
+    func_clk                  :  in std_logic;\n\
+    func_rst                  :  in bit \n"
+
+#define VHDL_DECL_ENTITY_END(__name) \
+"  );\n\n\
+end " << __name << ";"
+
+#define VHDL_DECL_ARCH(__entityname) \
+"\n\n\
+architecture auto_gen of " << __entityname << " is \n\n"
+
+#define VHDL_ARCH_BEGIN "\nbegin\n\n"
+
+#define VHDL_ARCH_END   "end auto_gen;\n\n"

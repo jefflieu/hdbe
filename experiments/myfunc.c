@@ -42,42 +42,67 @@ int ifthenelse(int a, int b)
     return b - a;
 }
 
-#pragma clang attribute push (__attribute__((annotate("shift_reg"))), apply_to = record)
+int ifthenelse2(int a, int b, int c, int d)
+{ 
+  int e;
+  if (a > b)
+    e = (a*b) + (c*d);
+  else 
+    e = (b*c) + (a*d);
+  
+  return e;
+}
 
-typedef struct {int data[16];} Shift_Reg16;
+int multiple_select(int a, int b)
+{  
+  int c;
+  switch(a) 
+  {
+    case 0:  c = b + 1; break;
+    case 1:  c = b - 1; break;
+    case 2:  c = b * 2; break;
+    default: c = b * 3; break;
+  }
+  
+  return c;
+}
+#define LENGTH 8
 
-#pragma clang attribute pop
+typedef struct {int data[LENGTH];} SHIFT_REG;
 
-int fir(Shift_Reg16 a, Shift_Reg16 b)
+
+
+int fir(SHIFT_REG a, SHIFT_REG b)
 {
   int tmp = 0;
-  for(unsigned char i = 0 ; i < 16; i ++ )
+  for(unsigned i = 0 ; i < LENGTH; i ++ )
   {
     tmp += a.data[i]*b.data[i];
   }
   return tmp;
 }
 
-int fir1(int a[16], int b[16])
+int fir1(int a[LENGTH], const int b[LENGTH])
 {
   int tmp = 0;
-  for(unsigned char i = 0 ; i < 16; i ++ )
+  for(unsigned i = 0 ; i < LENGTH; i ++ )
   {
     tmp += a[i]*b[i];
   }
   return tmp;
 }
 
-int fir2(int in, int b[16])
+int fir2(int in, SHIFT_REG b) //int b[LENGTH])
 {
   static int tmp = 0;
-  static int a[16];
-  a[0] = in;
+  //static int a[LENGTH];
+  static SHIFT_REG a;
+  a.data[0] = in;
   tmp = 0;
-  for(unsigned char i = 0 ; i < 16; i ++ )
+  for(unsigned i = 0 ; i < LENGTH; i ++ )
   {
-    tmp += a[i]*b[i];
-    a[i] = a[i-1];
+    tmp += a.data[i]*b.data[i];
+    a.data[i] = a.data[i-1];
   }
   return tmp;
 }

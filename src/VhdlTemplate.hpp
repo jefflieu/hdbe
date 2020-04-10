@@ -28,3 +28,31 @@ architecture auto_gen of " << __entityname << " is \n\n"
 #define VHDL_ARCH_BEGIN "\nbegin\n\n"
 
 #define VHDL_ARCH_END   "end auto_gen;\n\n"
+
+
+#define VHDL_PROCESS_TOP(__name) "\
+\
+  " << #__name << ": process(func_clk) \n\
+  begin \n\
+    if rising_edge(func_clk) then \n"
+
+#define VHDL_PROCESS_BOTTOM(__name) "\
+    end if; \n\
+  end process; --" << #__name << "\n\n"
+
+
+#define VHDL_STATEMENT_L1(statement) "\
+      " << statement << ";\n"
+
+#define VHDL_STATEMENT_L2(statement) "\
+        " << statement << ";\n"
+
+#define VHDL_STATEMENT_L3(statement) "\
+          " << statement << ";\n"
+
+#define VHDL_IF_STATEMENT(__cond, __then, __else) "\
+if " << __cond << " then " << '\n'\
+<< __then << "\n\
+else \n'\
+<< __else << "\n\
+end if;\n"

@@ -72,6 +72,12 @@ int main(int argc, char **argv) {
     return 1;
   }
   
+  Module_h mod_h = Mod.get();
+  for(auto global_var = mod_h->global_begin(), last = mod_h->global_end(); global_var != last; ++global_var)
+  {
+    LOG_S(1) << g_getStdStringName(*global_var);
+    global_var -> dump();
+  }
   
   
   //CallGraph callGraph(*Mod);

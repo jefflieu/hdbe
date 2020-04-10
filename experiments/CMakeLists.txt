@@ -33,4 +33,5 @@ target_link_libraries(ir_parser ${llvm_libs} )
 target_sources(ir_parser PUBLIC  
     ${dep_root}/loguru/loguru.cpp
     ${hdlbe_src}/VhdlGenerator.cpp
+    ${hdlbe_src}/OSPrint.cpp
     ${hdlbe_src}/SchedulingAlgorithm.cpp)

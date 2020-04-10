@@ -1,9 +1,24 @@
 
+#include <stdlib.h>
+#include <stdint.h>
 
 int Accumulate(int in) {
   static int reg = 0;
   int acc = reg + in;
   reg = in;
+  return acc;
+}
+
+int Accumulate2(int in, int8_t rst) {
+  static int reg = 0; 
+  int acc;
+  if (!rst) {
+    acc = reg + in;
+    reg = in;
+  } else {
+    reg = 0;
+    acc = 0;
+  }
   return acc;
 }
 

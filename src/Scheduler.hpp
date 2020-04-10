@@ -6,6 +6,7 @@
 
 #include "HardwareDescription.hpp"
 #include "CodeGenerator.hpp"
+#include "ControlStep.hpp"
 #include "BaseClass.hpp"
 #include "types.hpp"
 
@@ -29,7 +30,7 @@ class Scheduler : public BaseClass {
   protected:     
     Module_h m_module = nullptr;    
     Function_h m_function = nullptr;    
-    std::list<ControlStep_h> m_ctrlSteps;    
+    std::list<ControlStep> m_ctrlSteps;    
     hdbe::HardwareDescription HWD;
 
   public: 
@@ -38,7 +39,6 @@ class Scheduler : public BaseClass {
 
     virtual uint32_t schedule(SchedulingAlgorithm& algo, std::string funcName){};
     virtual uint32_t schedule(SchedulingAlgorithm& algo, BasicBlock_h bb){};
-    void addControlStep(ControlStep_h cs) {m_ctrlSteps.push_back(cs);}
 
     //void constructDDG(std::string funcName) {
     //  llvm::PassBuilder PB;

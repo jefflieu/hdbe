@@ -29,6 +29,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
   auto module = scheduler->m_module;
   auto F      = scheduler->m_function;
   auto hwd    = &(scheduler->HWD);
+  auto cslist = &(scheduler->m_ctrlSteps);
   
   LOG_F(INFO, "SimpleScheduler Visit");  
   
@@ -56,13 +57,13 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
     }
   
     
-    for(auto bbi = F->begin(), bbe = F->end(); bbi != bbe ; ++bbi)
+    for(auto BBi = F->begin(), bbe = F->end(); BBi != bbe ; ++BBi)
     {
-      LOG_S(6) << " Basic block: " << g_getStdStringName(*bbi);
+      LOG_S(6) << " Basic block: " << g_getStdStringName(*BBi);
       std::list<Const_Instruction_h> instructions;                
-      
+      std::string bbName = g_getStdStringName(*BBi);
       //Collecting all instructions in the basic block 
-      for(auto ins_i = bbi->begin(), instruction_end = bbi->end(); ins_i != instruction_end; ++ ins_i)
+      for(auto ins_i = BBi->begin(), instruction_end = BBi->end(); ins_i != instruction_end; ++ ins_i)
       {
         auto ins_h = D_GET_ITEM_PTR(ins_i);
         instructions.push_back(ins_h);
@@ -71,13 +72,12 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
      
       
       //Scheduling 
-      uint32_t step = 0;
+      uint32_t step = 0;     
       //For each basic block do until all instructions in that is scheduled 
       while( ! instructions.empty()) {
 
-        const std::string step_name = g_getStdStringName(*bbi) + "." + std::to_string(step);
-        ControlStep *cs  = new ControlStep(step_name);
-        LOG_S(6) << step_name;
+        cslist->push_back(ControlStep(bbName, step));
+        ControlStep& cs  = cslist->back();
         
         //Iterate the list and see if the instruction can be scheduled  
         //Instruction can be scheduled when all the operands are valid 
@@ -101,19 +101,18 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
                 (*op_i)->dump();
                 break;
                 }
-                //LOG_S(1) << g_getStdStringName((*op_i));              
               }
           }
           auto handle = *I;          
           ++I;
           if (good) {
-            cs->addInstruction(handle);  
+            cs.setBranch(handle->isTerminator()); //Should be the last one to be in the list
+            cs.addInstruction(handle);  
             instructions.remove(handle);
             valueBirthTime[(llvm::Value*)(handle)] = step + hwd->getLatency(handle);
-            LOG_S(6) << "Instruction " <<g_getStdStringName(handle) << " (" << handle << ") " << " is scheduled";
           }
-        }
-        scheduler->addControlStep(cs);
+        }  
+        LOG_S(1) << cs;
         step ++ ; 
         if (step > 10) return 0x1;
       }

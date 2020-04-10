@@ -5,7 +5,6 @@
 #include <fstream> 
 
 #include "BaseClass.hpp"
-#include "CodeGenerator.hpp"
 #include "Scheduler.hpp"
 
 #include "llvm/IR/InstrTypes.h"
@@ -14,6 +13,7 @@
 
 namespace hdbe {
 class Scheduler;
+
 class CodeGenerator : public BaseClass {  
   
   protected: 
@@ -24,6 +24,18 @@ class CodeGenerator : public BaseClass {
     CodeGenerator() {};
     CodeGenerator(Scheduler *_scheduler): scheduler(_scheduler) {};
     ~CodeGenerator() {};
+    std::string makeLegalName(std::string name) {
+      std::string invalid_char = ".?+-*";
+      std::string new_string;
+      for(auto i = name.begin(); i != name.end(); i++)
+        {          
+          if(invalid_char.find(*i) != std::string::npos)                     
+            new_string.push_back('_');
+          else 
+            new_string.push_back(*i);  
+        }
+      return new_string;
+    }
 };
 
 class VhdlGenerator : public CodeGenerator {
@@ -39,7 +51,7 @@ class VhdlGenerator : public CodeGenerator {
     std::ostream& writeLibrary(std::ostream& os);
     std::ostream& writePorts(std::ostream& os);    
     std::ostream& writeSignalDeclaration(std::ostream& os) {};    
-    std::ostream& writeStateSquence(std::ostream& os) {};        
+    std::ostream& writeStateSquence(std::ostream& os);        
     std::ostream& writeInstructions(std::ostream& os) {};            
     
 };

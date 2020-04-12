@@ -60,8 +60,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
     for(auto BBi = F->begin(), bbe = F->end(); BBi != bbe ; ++BBi)
     {
       LOG_S(6) << " Basic block: " << g_getStdStringName(*BBi);
-      std::list<Const_Instruction_h> instructions;                
-      std::string bbName = g_getStdStringName(*BBi);
+      std::list<Const_Instruction_h> instructions;                      
       //Collecting all instructions in the basic block 
       for(auto ins_i = BBi->begin(), instruction_end = BBi->end(); ins_i != instruction_end; ++ ins_i)
       {
@@ -76,7 +75,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
       //For each basic block do until all instructions in that is scheduled 
       while( ! instructions.empty()) {
 
-        cslist->push_back(ControlStep(bbName, step));
+        cslist->push_back(ControlStep(&*BBi, step));
         ControlStep& cs  = cslist->back();
         
         //Iterate the list and see if the instruction can be scheduled  
@@ -107,6 +106,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
           ++I;
           if (good) {
             cs.setBranch(handle->isTerminator()); //Should be the last one to be in the list
+            cs.setReturn(handle->getOpcode() == llvm::Instruction::Ret); //Should be the last one to be in the list
             cs.addInstruction(handle);  
             instructions.remove(handle);
             valueBirthTime[(llvm::Value*)(handle)] = step + hwd->getLatency(handle);

@@ -4,45 +4,42 @@
 #include <iostream> 
 #include <fstream> 
 
-#include "BaseClass.hpp"
-#include "Scheduler.hpp"
-
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 
+
+#include "HDLUtil.hpp"
+#include "BaseClass.hpp"
+#include "Scheduler.hpp"
+#include "DataAnalyzer.hpp"
+#include "HdlObject.hpp"
+
+
 namespace hdbe {
 class Scheduler;
+class DataAnalyzer;
+class HdlObject;
+class HdlPort;
 
 class CodeGenerator : public BaseClass {  
   
   protected: 
     Scheduler *scheduler;  
+    DataAnalyzer *analyzer;  
     std::string getFunctionName();
     
   public: 
     CodeGenerator() {};
-    CodeGenerator(Scheduler *_scheduler): scheduler(_scheduler) {};
-    ~CodeGenerator() {};
-    std::string makeLegalName(std::string name) {
-      std::string invalid_char = ".?+-*";
-      std::string new_string;
-      for(auto i = name.begin(); i != name.end(); i++)
-        {          
-          if(invalid_char.find(*i) != std::string::npos)                     
-            new_string.push_back('_');
-          else 
-            new_string.push_back(*i);  
-        }
-      return new_string;
-    }
+    CodeGenerator(Scheduler *_scheduler, DataAnalyzer *_analyzer): scheduler(_scheduler), analyzer(_analyzer) {};
+    ~CodeGenerator() {};    
 };
 
 class VhdlGenerator : public CodeGenerator {
   
   public: 
     VhdlGenerator() {};
-    VhdlGenerator(Scheduler *_scheduler): CodeGenerator(_scheduler) {};
+    VhdlGenerator(Scheduler *_scheduler, DataAnalyzer* _analyzer): CodeGenerator(_scheduler, _analyzer){};
     ~VhdlGenerator() {};
     
     void write();
@@ -54,6 +51,25 @@ class VhdlGenerator : public CodeGenerator {
     std::ostream& writeStateSquence(std::ostream& os);        
     std::ostream& writeInstructions(std::ostream& os) {};            
     
+};
+
+class VerilogGenerator : public CodeGenerator {
+  
+  public: 
+    VerilogGenerator() {};
+    VerilogGenerator(Scheduler *_scheduler, DataAnalyzer* _analyzer): CodeGenerator(_scheduler, _analyzer){};
+    ~VerilogGenerator() {};
+    
+    void write();
+  
+  private: 
+    
+    std::ostream& writePorts(std::ostream& os);    
+    std::ostream& writeSignalDeclaration(std::ostream& os) {};    
+    std::ostream& writeStateSquence(std::ostream& os);        
+    std::ostream& writeInstructions(std::ostream& os) {};            
+    
+    std::string writeHdlObjDeclaration(HdlObject& obj);
 };
 
 }

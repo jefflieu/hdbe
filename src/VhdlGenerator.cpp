@@ -24,20 +24,6 @@ std::ostream& VhdlGenerator::writePorts(std::ostream& os){
 std::ostream& VhdlGenerator::writeStateSquence(std::ostream& os){
   std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
   os << VHDL_PROCESS_TOP(state_process);
-  for(auto cs = statelist.begin(); cs!=statelist.end(); cs++)
-  {    
-    ControlStep& s = *cs;
-    std::string this_state = makeLegalName("state_" + s.getName() + std::to_string(s.getId()));
-    if (s.isEntry()) {
-      std::string next_state = makeLegalName("state_" + s.getName() + std::to_string(s.getId()+ 1));
-      os << VHDL_STATEMENT_L1(next_state << " <= " << "func_start");
-    } else if (s.isBranch()) {
-    
-    } else {
-      std::string next_state = makeStateName(s.getName() + std::to_string(s.getId()+ 1));
-      os << VHDL_STATEMENT_L1(next_state << " <= " << this_state);      
-    }
-  }
   os << VHDL_PROCESS_BOTTOM(state_process);
   return os;
 };

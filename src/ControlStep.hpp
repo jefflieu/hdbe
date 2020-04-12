@@ -1,38 +1,55 @@
 #pragma once 
 #include <string> 
 #include <list> 
-#include <iostream> 
+#include <stdint.h> 
+#include <iostream>
 
+#include "HardwareDescription.hpp"
+#include "CodeGenerator.hpp"
+#include "ControlStep.hpp"
 #include "BaseClass.hpp"
-#include "OSPrint.hpp"
+#include "types.hpp"
+
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/Analysis/DDG.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Passes/PassBuilder.h"
+#include "llvm/Support/raw_ostream.h"
 
 namespace hdbe {
 
 class ControlStep : public BaseClass {
   
   private: 
-    bool isBranchNode = false;
-    std::list<Const_Instruction_h> m_instrList;    
-    std::string m_Name;
+    bool m_isBranch = false;
+    bool m_isRet = false;
+    std::list<const llvm::Instruction *> m_instrList;    
+    std::list<ControlStep *> m_outList;    
+    std::list<ControlStep *> m_inList;    
+    llvm::BasicBlock *m_bbHandle;    
+    std::string m_bbName;    
     int m_id = 0;
   
   public: 
-    ControlStep (const std::string& name, int id) :  m_Name(name), m_id(id) {}
+    ControlStep (llvm::BasicBlock *bb, int id) :  m_bbHandle(bb), m_id(id) {m_bbName = m_bbHandle->getName().str();}
     ~ControlStep() {}
 
-    std::string getName() {return this->m_Name;}
-    int  getId() {return this->m_id;}
-    bool isBranch() {return isBranchNode;};
-    void setBranch(bool branch) {isBranchNode = branch;};
-    void setId(int _id) {m_id = _id;}
-    bool isEntry() {return (m_id == 0);}
+    const std::string& getbbName() {return this->m_bbName;}
     
-    bool addInstruction(Const_Instruction_h instruction) {      
+    int  getId() {return this->m_id;}
+    bool isBranch() {return m_isBranch;};
+    void setBranch(bool branch) {m_isBranch = branch;};
+    void setId(int _id) {m_id = _id;}
+    void setReturn(bool ret) {m_isRet = ret;}
+    bool isEntry() {return (m_id == 0);}
+    bool isReturn() {return m_isRet;}
+    
+    bool addInstruction(const llvm::Instruction * instruction) {      
       m_instrList.push_back(instruction);
     }
 
     std::ostream& print(std::ostream& os) const {      
-      os << "Step: " << m_Name << " Branch: " << isBranchNode <<'\n';
+      os << "Step: " << m_bbName << " Branch: " << m_isBranch <<'\n';
       for(auto I = m_instrList.begin(); I != m_instrList.end(); ++I){   
         std::string name = g_getStdStringName(*I);
         std::string hash_name = 'S' + std::to_string((unsigned long long)*I & 0xffffffff);

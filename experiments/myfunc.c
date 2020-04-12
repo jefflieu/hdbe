@@ -1,6 +1,4 @@
 
-#include <stdlib.h>
-#include <stdint.h>
 
 int Accumulate(int in) {
   static int reg = 0;
@@ -9,7 +7,7 @@ int Accumulate(int in) {
   return acc;
 }
 
-int Accumulate2(int in, int8_t rst) {
+int Accumulate2(int in, unsigned char rst) {
   static int reg = 0; 
   int acc;
   if (!rst) {
@@ -84,7 +82,7 @@ int multiple_select(int a, int b)
 #define LENGTH 8
 
 typedef struct {int data[LENGTH];} SHIFT_REG;
-
+typedef struct {int data[2]; unsigned char start:1; unsigned char end : 1;} BUS_T;
 
 
 int fir(SHIFT_REG a, SHIFT_REG b)
@@ -145,6 +143,13 @@ int pointers(int * a, int size, int patt)
     if (a[i] == patt) break;
   }
   return i;
+}
+
+typedef int Array8_t [8];
+
+int assortedArg(int * pointer, int scalar, SHIFT_REG structure, Array8_t array, BUS_T complex_struct)
+{
+  return complex_struct.start + complex_struct.end;
 }
 
 int main(void)

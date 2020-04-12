@@ -14,14 +14,15 @@
 #include "llvm/Support/SourceMgr.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Analysis/CallGraph.h"
-#include "loguru/loguru.hpp"
-#include "ControlStep.hpp"
-#include "Scheduler.hpp"
-#include "CodeGenerator.hpp"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/DDG.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
+#include "loguru/loguru.hpp"
+#include "ControlStep.hpp"
+#include "Scheduler.hpp"
+#include "CodeGenerator.hpp"
+#include "DataAnalyzer.hpp"
 
 using namespace llvm;
 using namespace hdbe;
@@ -72,12 +73,12 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  Module_h mod_h = Mod.get();
-  for(auto global_var = mod_h->global_begin(), last = mod_h->global_end(); global_var != last; ++global_var)
-  {
-    LOG_S(1) << g_getStdStringName(*global_var);
-    global_var -> dump();
-  }
+  //Module_h mod_h = Mod.get();
+  //for(auto global_var = mod_h->global_begin(), last = mod_h->global_end(); global_var != last; ++global_var)
+  //{
+  //  LOG_S(1) << g_getStdStringName(*global_var);
+  //  global_var -> dump();
+  //}
   
   
   //CallGraph callGraph(*Mod);
@@ -87,8 +88,10 @@ int main(int argc, char **argv) {
   SimpleScheduler scheduler(Mod.get());
   SchedulingAlgorithm algo;
   scheduler.schedule(algo, funcName);
-  VhdlGenerator vhdlGen(&scheduler);
-  vhdlGen.write();
+  DataAnalyzer dAnalyzer(Mod.get());
+  dAnalyzer.analyze(funcName);
+  VerilogGenerator verilogGen(&scheduler, &dAnalyzer);
+  verilogGen.write();
   
   
   LOG_F(INFO, "Program ends .. "); 

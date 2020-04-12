@@ -21,6 +21,19 @@ typedef const ControlStep* Const_ControlStep_h;
 typedef const llvm::Function* Const_Function_h;
 typedef const llvm::BasicBlock* Const_BasicBlock_h;
 
+
+enum class HdlVectorType {scalarType, arrayType, memoryType};
+enum class HdlSignalType {combType, regType, portType};
+
+struct HdlProperty {
+  HdlVectorType vtype = HdlVectorType::scalarType;
+  HdlSignalType stype = HdlSignalType::combType;
+  int  bitwidth = 0;
+  int  arraylength =0;
+};
+
+
+
 /* 
   These helper helps to convert to STD string from StringRef, 
   Work both cases of argument being pointer or a reference
@@ -39,6 +52,7 @@ std::string g_getStdStringName(T& irObject) {return (irObject.getName()).str();}
 
 #define LLVM_LOG(level, out_msg) do { if (loguru::g_stderr_verbosity >= level) llvm::outs() << out_msg; } while(0)
 
+#define D_IS_CONST_OPERAND(oprnd) (oprnd->getValueID() > llvm::Value::ValueTy::ConstantFirstVal) && (oprnd->getValueID() < llvm::Value::ValueTy::ConstantLastVal)
 
 }
 

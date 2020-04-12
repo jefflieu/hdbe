@@ -20,12 +20,14 @@
 namespace hdbe {
 
 class CodeGenerator;
+class VerilogGenerator;
 class VhdlGenerator;
 class SchedulingAlgorithm;
 
 class Scheduler : public BaseClass {
   friend CodeGenerator;
   friend VhdlGenerator;
+  friend VerilogGenerator;
   friend SchedulingAlgorithm;
   protected:     
     Module_h m_module = nullptr;    

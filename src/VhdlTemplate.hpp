@@ -51,8 +51,8 @@ architecture auto_gen of " << __entityname << " is \n\n"
           " << statement << ";\n"
 
 #define VHDL_IF_STATEMENT(__cond, __then, __else) "\
-if " << __cond << " then " << '\n'\
+if " << __cond << " then " << "\n"\
 << __then << "\n\
-else \n'\
+else \n"\
 << __else << "\n\
 end if;\n"

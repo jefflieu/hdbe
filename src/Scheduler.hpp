@@ -9,6 +9,7 @@
 #include "ControlStep.hpp"
 #include "BaseClass.hpp"
 #include "types.hpp"
+#include "ValueLifeInfo.hpp"
 
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/DDG.h"
@@ -23,6 +24,7 @@ class CodeGenerator;
 class VerilogGenerator;
 class VhdlGenerator;
 class SchedulingAlgorithm;
+class ValueLifeInfo;
 
 class Scheduler : public BaseClass {
   friend CodeGenerator;
@@ -33,7 +35,9 @@ class Scheduler : public BaseClass {
     Module_h m_module = nullptr;    
     Function_h m_function = nullptr;    
     std::list<ControlStep> m_ctrlSteps;    
-    hdbe::HardwareDescription HWD;
+    HardwareDescription HWD;
+    std::map<llvm::Value*, ValueLifeInfo> valueInfoMap;
+    
 
   public: 
     Scheduler (Module_h _irModule) : m_module(_irModule) {};

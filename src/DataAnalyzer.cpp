@@ -23,7 +23,7 @@ void DataAnalyzer::analyze(std::string funcName)
                                         m_portList.push_back(HdlPort((llvm::Value*)&*I));                                       
                                         HdlPort &port = m_portList.back();
                                         port.m_property.vtype = HdlVectorType::scalarType;
-                                        port.m_property.stype = HdlSignalType::portType;
+                                        port.m_property.stype = HdlSignalType::inputType;
                                         port.m_property.bitwidth = type->getIntegerBitWidth();                                        
                                         break; 
                                       }
@@ -31,7 +31,7 @@ void DataAnalyzer::analyze(std::string funcName)
                                         m_portList.push_back(HdlPort((llvm::Value*)&*I));
                                         HdlPort &port = m_portList.back();
                                         port.m_property = analyzePointer(&*I);
-                                        port.m_property.stype = HdlSignalType::portType;
+                                        port.m_property.stype = HdlSignalType::inputType;
                                         
                                                                                   
                                         break;
@@ -41,11 +41,28 @@ void DataAnalyzer::analyze(std::string funcName)
         break;
     }
   }
+  
+  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
+    if (I->getOpcode() == llvm::Instruction::Ret) {
+      for(llvm::Use &use : I->operands())
+      { 
+        llvm::Value* val = use.get();
+        m_portList.push_back(HdlPort((llvm::Value*)val));
+        HdlPort &port = m_portList.back();
+        port.m_property.vtype = HdlVectorType::scalarType;
+        port.m_property.stype = HdlSignalType::outputType;
+        assert(val->getType()->getTypeID()==llvm::Type::IntegerTyID);
+        port.m_property.bitwidth = val->getType()->getIntegerBitWidth();
+      }
+    }
+  }    
+
+  //Get Return type of outport 
 
   // F is a pointer to a Function instance
   //Iterate over Instructions. Each instruction iterate over 
-  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I)
-    llvm::outs() << *I << "\n";
+  //for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I)
+    //llvm::outs() << *I << "\n";
    
 }
 

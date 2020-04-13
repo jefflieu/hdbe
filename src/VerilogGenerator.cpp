@@ -7,10 +7,15 @@ using namespace hdbe;
 std::string VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj)
 {   
     std::string decl;
-    decl = (obj.m_property.stype == HdlSignalType::portType)?"input ":"  ";
+    decl = (obj.m_property.stype == HdlSignalType::inputType)?"input ":(
+              (obj.m_property.stype == HdlSignalType::outputType)?"output ":"  "
+            );
     switch (obj.m_property.vtype)
     {
-      case HdlVectorType::scalarType : decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name) + ",\n";
+      case HdlVectorType::scalarType : if (obj.m_property.bitwidth > 1) 
+                                         decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name) + ",\n";
+                                       else 
+                                         decl += "logic " + makeHdlName(obj.m_name) + ",\n";
                                        break;
       case HdlVectorType::memoryType : break;
       case HdlVectorType::arrayType  : decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name) + "[" + std::to_string(obj.m_property.arraylength-1) + ":0],\n";

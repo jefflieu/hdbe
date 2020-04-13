@@ -15,6 +15,8 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/FormatVariadicDetails.h"
+#include "llvm/Support/FormatVariadic.h"
 
 namespace hdbe {
 
@@ -48,12 +50,11 @@ class ControlStep : public BaseClass {
       m_instrList.push_back(instruction);
     }
 
-    std::ostream& print(std::ostream& os) const {      
-      os << "Step: " << m_bbName << " Branch: " << m_isBranch <<'\n';
+    std::ostream& print(std::ostream& os) const {            
+      os << "Step: " << m_bbName << m_id << " branch: " << m_isBranch <<'\n';
       for(auto I = m_instrList.begin(); I != m_instrList.end(); ++I){   
-        std::string name = g_getStdStringName(*I);
-        std::string hash_name = 'S' + std::to_string((unsigned long long)*I & 0xffffffff);
-        os << (*I) << " " << (name.length()>0?name:hash_name) << " " << (*I)->getOpcodeName() << '\n'; 
+        std::string name = g_getStdStringName(*I);          
+        os << (*I) << " " << name << " " << (*I)->getOpcodeName() << '\n'; 
       }
       return os;
     }

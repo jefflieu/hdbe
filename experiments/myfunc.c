@@ -2,22 +2,18 @@
 
 int Accumulate(int in) {
   static int reg = 0;
-  int acc = reg + in;
-  reg = in;
-  return acc;
+  reg = reg + in;  
+  return reg;
 }
 
-int Accumulate2(int in, unsigned char rst) {
-  static int reg = 0; 
-  int acc;
+int Accumulate2(int in, _Bool rst) {
+  static int reg = 0;   
   if (!rst) {
-    acc = reg + in;
-    reg = in;
+    reg = reg + in;    
   } else {
-    reg = 0;
-    acc = 0;
+    reg = 0;    
   }
-  return acc;
+  return reg;
 }
 
 
@@ -40,6 +36,11 @@ int MultiplyAccumulate(int a, int b, int c) {
 int MultiplyAccumulate4(int a, int b, int c, int d) {
   return a*b + c*d;
 }
+
+int MultiplyAccumulate8(int a, int b, int c, int d, int e, int f, int g, int h) {
+  return a*b*c + c*d*e + e*f*g + h;
+}
+
 
 
 int Max(int a, int b)
@@ -78,6 +79,18 @@ int multiple_select(int a, int b)
   }
   
   return c;
+}
+
+int multiple_select2(int a, int b)
+{  
+  int c;
+  switch(a) 
+  {
+    case 0:  return b + 1; 
+    case 1:  return b - 1; 
+    case 2:  return b * 2; 
+    default: return b * 3; 
+  }
 }
 #define LENGTH 8
 

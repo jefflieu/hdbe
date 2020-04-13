@@ -23,7 +23,7 @@ typedef const llvm::BasicBlock* Const_BasicBlock_h;
 
 
 enum class HdlVectorType {scalarType, arrayType, memoryType};
-enum class HdlSignalType {combType, regType, portType};
+enum class HdlSignalType {combType, regType, inputType, outputType};
 
 struct HdlProperty {
   HdlVectorType vtype = HdlVectorType::scalarType;

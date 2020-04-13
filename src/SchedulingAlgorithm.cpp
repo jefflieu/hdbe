@@ -62,7 +62,11 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
       auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>(&*(arg_i), ValueLifeInfo(&*(arg_i))));
       ret.first->second.setBirthTime(firstBB, 0.0);      
     }
-  
+
+    for(const llvm::Use &use : F->operands())
+      { 
+        use.get()->dump();
+      }
     
     for(auto BBi = F->begin(), bbe = F->end(); BBi != bbe ; ++BBi)
     {
@@ -128,12 +132,12 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
             instructions.remove(instruction);
             auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>((llvm::Value*)instruction, ValueLifeInfo((llvm::Value*)instruction)));
             ret.first->second.setBirthTime(&*BBi, valid_time);
-            LOG_S(6) << "ok to be scheduled, valid time " << ret.first->second.getBirthTimeStep();
+            LOG_S(6) << "ok to be scheduled, valid time " << ret.first->second.getBirthTimeStep();            
             //Update usage time 
             //The instruction is scheduled, we update the operands useage 
             for(const llvm::Use &use : instruction->operands())
               {
-                valueInfoMap[(llvm::Value*)&use].addUseTime(&*BBi, step);
+                valueInfoMap[(llvm::Value*)use.get()].addUseTime(&*BBi, step);
               }
           }
         }  
@@ -150,6 +154,9 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
     {
       LOG_S(6) << "Value : " << (I->first) << " name: " << (I->first)->getName().str();
       LOG_S(6) << "+Birthtime " << (I->second).getBirthTimeBB() << " : " << (I->second).getBirthTimeStep();
+      LOG_S(6) << "+Usetime :  "; 
+      for(auto J = (I->second).useTimeList.begin(), F = (I->second).useTimeList.end(); J!=F; ++J) 
+        LOG_S(6) << "--" << (*J).bb << " : " << (*J).step;
     }
   return 0;
 }

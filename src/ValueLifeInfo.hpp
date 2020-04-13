@@ -13,6 +13,7 @@
 #include "ControlStep.hpp"
 #include "BaseClass.hpp"
 #include "types.hpp"
+#include "loguru/loguru.hpp"
 
 
 
@@ -36,7 +37,7 @@ class ValueLifeInfo : public BaseClass {
     ValueLifeInfo(): irValue(nullptr) {};
     ValueLifeInfo(Value* _val): irValue(_val) {};
     ~ValueLifeInfo() {};
-    void setBirthTime(BasicBlock *bb, float step){birth.bb = bb; birth.step = step;};
+    void setBirthTime(BasicBlock *bb, float step){birth.bb = bb; birth.step = step; LOG_S(6) << irValue << " " << bb << " " << step;};
     BasicBlock *getBirthTimeBB(){return birth.bb;}
     float       getBirthTimeStep(){return birth.step;}
     TimePoint&  getBirthTime() {return birth;}

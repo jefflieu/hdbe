@@ -50,15 +50,16 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
     //Assign birth time for Global Variable 
     for(auto global_var_i = module->global_begin(), last = module->global_end(); global_var_i != last; ++global_var_i)
     {
-      auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>(D_GET_ITEM_PTR(global_var_i), ValueLifeInfo(D_GET_ITEM_PTR(global_var_i))));
+      LOG_S(6) << &*global_var_i << " name " << g_getStdStringName(*global_var_i);
+      auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>(&*global_var_i, ValueLifeInfo(&*global_var_i)));
       ret.first->second.setBirthTime(firstBB, 0.0);
     }
 
     //Assign valid_time for Arguments:   
     for(auto arg_i = F->arg_begin(), last = F->arg_end(); arg_i != last; arg_i ++ )
     {
-      LOG_S(6) << g_getStdStringName(arg_i);
-      auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>(D_GET_ITEM_PTR(arg_i), ValueLifeInfo(D_GET_ITEM_PTR(arg_i))));
+      LOG_S(6) << &*arg_i << " name " << g_getStdStringName(*arg_i);
+      auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>(&*(arg_i), ValueLifeInfo(&*(arg_i))));
       ret.first->second.setBirthTime(firstBB, 0.0);      
     }
   
@@ -98,34 +99,42 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
             default:
               //Find the latest time of dependency  
               LOG_S(6) << "Processing operand";
-              for(auto op_i = (*I)->op_begin(), last = (*I)->op_end(); op_i != last; op_i++)
+              for(const llvm::Use &use : (*I)->operands())
               {
-                if (((*op_i)->getType())->isLabelTy()) continue;
-                if (((*op_i)->getValueID()) > llvm::Value::ValueTy::ConstantFirstVal && ((*op_i)->getValueID() < llvm::Value::ValueTy::ConstantLastVal)) continue;
-                if (valueInfoMap.count(*op_i) == 0) {dep_birthtime = 1.0e6; break;}
-                float op_i_birth = valueInfoMap[(llvm::Value*)(*op_i)].getBirthTimeStep();
-                LOG_S(6) << (*op_i) << " " << (*op_i)->getName().str() << " " <<op_i_birth;
+                llvm::Value* val = use.get();
+                LOG_S(6) << val;
+                val->dump();
+                if ((val->getType())->isLabelTy()) continue;
+                if ((val->getValueID()) > llvm::Value::ValueTy::ConstantFirstVal && (val->getValueID() < llvm::Value::ValueTy::ConstantLastVal)) continue;
+                if (valueInfoMap.count(val) == 0) {dep_birthtime = 1.0e6; LOG_S(6) << "Not found"; break;}
+                float op_i_birth = valueInfoMap[val].getBirthTimeStep();
+                LOG_S(6) << val << " " << val->getName().str() << " " <<op_i_birth;
                 if (dep_birthtime < op_i_birth) dep_birthtime = op_i_birth;
                 
-                //llvm::outs() << (*op_i)->getName() << "Type ID: " << ((*op_i)->getType())->getTypeID() << " Value ID: " << (*op_i)->getValueID() << " not found\n";  
-                //(*op_i)->dump();                
+                //llvm::outs() << val->getName() << "Type ID: " << (val->getType())->getTypeID() << " Value ID: " << val->getValueID() << " not found\n";  
+                //val->dump();                
               }
           }
           float latency = hwd->getLatency(*I);          
           float valid_time = hwd->getValidTime(*I, dep_birthtime) ;          
           LOG_S(6) << "Timing info: " << dep_birthtime << " " << valid_time;
-          auto handle = *I;          
+          auto instruction = *I;          
           ++I;
           //Ok to be schedule 
           if (valid_time <= (step + 1.0)) {
-            cs.setBranch(handle->isTerminator()); //Should be the last one to be in the list
-            cs.setReturn(handle->getOpcode() == llvm::Instruction::Ret); //Should be the last one to be in the list
-            cs.addInstruction(handle);  
-            instructions.remove(handle);
-            auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>((llvm::Value*)handle, ValueLifeInfo((llvm::Value*)handle)));
+            cs.setBranch(instruction->isTerminator()); //Should be the last one to be in the list
+            cs.setReturn(instruction->getOpcode() == llvm::Instruction::Ret); //Should be the last one to be in the list
+            cs.addInstruction(instruction);  
+            instructions.remove(instruction);
+            auto ret = valueInfoMap.insert(std::pair<llvm::Value*, ValueLifeInfo>((llvm::Value*)instruction, ValueLifeInfo((llvm::Value*)instruction)));
             ret.first->second.setBirthTime(&*BBi, valid_time);
             LOG_S(6) << "ok to be scheduled, valid time " << ret.first->second.getBirthTimeStep();
             //Update usage time 
+            //The instruction is scheduled, we update the operands useage 
+            for(const llvm::Use &use : instruction->operands())
+              {
+                valueInfoMap[(llvm::Value*)&use].addUseTime(&*BBi, step);
+              }
           }
         }  
         LOG_S(1) << cs;
@@ -137,6 +146,11 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
   }
   catch (...) {    
   }
+  for(auto I = valueInfoMap.begin(), E = valueInfoMap.end(); I!=E; ++I)
+    {
+      LOG_S(6) << "Value : " << (I->first) << " name: " << (I->first)->getName().str();
+      LOG_S(6) << "+Birthtime " << (I->second).getBirthTimeBB() << " : " << (I->second).getBirthTimeStep();
+    }
   return 0;
 }
 

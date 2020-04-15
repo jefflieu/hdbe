@@ -43,7 +43,10 @@ class ValueLifeInfo : public BaseClass {
     TimePoint&  getBirthTime() {return birth;}
     void addUseTime(BasicBlock *bb, float step ){TimePoint tmp = {.bb = bb, .step = step};  useTimeList.push_back(tmp);}
     std::vector<TimePoint>& getUseTimeList() {return useTimeList;}
-
+    void dump() {LOG_S(6) << irValue << " " << birth.bb << " " << birth.step;};
+    int getRegisterStage() {
+      return floor(useTimeList.back().step) - floor(birth.step);
+    }
 };
 
 }

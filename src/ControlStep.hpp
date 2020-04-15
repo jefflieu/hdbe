@@ -22,7 +22,7 @@ namespace hdbe {
 
 class ControlStep : public BaseClass {
   
-  private: 
+  public: 
     bool m_isBranch = false;
     bool m_isRet = false;
     std::list<const llvm::Instruction *> m_instrList;    
@@ -49,6 +49,9 @@ class ControlStep : public BaseClass {
     bool addInstruction(const llvm::Instruction * instruction) {      
       m_instrList.push_back(instruction);
     }
+    
+    
+    
 
     std::ostream& print(std::ostream& os) const {            
       os << "Step: " << m_bbName << m_id << " branch: " << m_isBranch <<'\n';

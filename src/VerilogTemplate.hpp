@@ -27,3 +27,6 @@ begin: " << #__name << "\n\n"
 
 #define VERILOG_CLKPROCESS_BOTTOM(__name) "\n\
 end \n"
+
+#define VERILOG_PORTMAP(portstr, varstr)  std::to_string("." + portstr + " ( " + varstr + ")")
+#define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))

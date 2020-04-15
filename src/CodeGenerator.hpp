@@ -65,11 +65,11 @@ class VerilogGenerator : public CodeGenerator {
   private: 
     
     std::ostream& writePorts(std::ostream& os);    
-    std::ostream& writeSignalDeclaration(std::ostream& os) {};    
+    std::ostream& writeSignalDeclaration(std::ostream& os);    
     std::ostream& writeStateSquence(std::ostream& os);        
-    std::ostream& writeInstructions(std::ostream& os) {};            
-    
+    std::ostream& writeInstructions(std::ostream& os);
     std::string writeHdlObjDeclaration(HdlObject& obj);
+    std::string writeOneInstruction(const llvm::Instruction* I, ControlStep& s);
 };
 
 }

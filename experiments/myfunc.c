@@ -33,6 +33,10 @@ int MultiplyAccumulate(int a, int b, int c) {
   return a*b + c;
 }
 
+int MultiplyAccumulate2(unsigned a, unsigned  b, unsigned c) {
+  return a*b + c;
+}
+
 int MultiplyAccumulate4(int a, int b, int c, int d) {
   return a*b + c*d;
 }

@@ -6,5 +6,5 @@
 namespace hdbe {
 
 std::ostream& operator<<(std::ostream& os, const ControlStep& cs);
-
+std::string to_hexstring(uintptr_t ptr, char h = 'H');
 }

@@ -4,12 +4,6 @@
 #include <stdint.h> 
 #include <iostream>
 
-#include "HardwareDescription.hpp"
-#include "CodeGenerator.hpp"
-#include "ControlStep.hpp"
-#include "BaseClass.hpp"
-#include "types.hpp"
-#include "ValueLifeInfo.hpp"
 
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/DDG.h"
@@ -17,6 +11,14 @@
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Support/raw_ostream.h"
 
+
+
+#include "types.hpp"
+#include "HardwareDescription.hpp"
+#include "CodeGenerator.hpp"
+#include "ControlStep.hpp"
+#include "BaseClass.hpp"
+#include "ValueLifeInfo.hpp"
 
 namespace hdbe {
 
@@ -26,7 +28,7 @@ class VhdlGenerator;
 class SchedulingAlgorithm;
 class ValueLifeInfo;
 
-class Scheduler : public BaseClass {
+class Scheduler : public BaseClass {  
   friend CodeGenerator;
   friend VhdlGenerator;
   friend VerilogGenerator;
@@ -36,7 +38,7 @@ class Scheduler : public BaseClass {
     Function_h m_function = nullptr;    
     std::list<ControlStep> m_ctrlSteps;    
     HardwareDescription HWD;
-    std::map<llvm::Value*, ValueLifeInfo> valueInfoMap;
+    std::map<const llvm::Value*, ValueLifeInfo> valueInfoMap;
     
 
   public: 

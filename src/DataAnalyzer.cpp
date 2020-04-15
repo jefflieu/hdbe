@@ -4,7 +4,9 @@
 
 using namespace hdbe;
 using Function = llvm::Function;
+using GlobalValue = llvm::GlobalValue;
 using DataLayout = llvm::DataLayout;
+using Module = llvm::Module;
 using llvm::outs;
 
 void DataAnalyzer::analyze(std::string funcName) 
@@ -15,69 +17,69 @@ void DataAnalyzer::analyze(std::string funcName)
   {
     outs() << *I << "\n"; 
     outs() << "Argument " << I->getName() << " type " << I->getType() << " \n" ; 
-    auto type = I->getType(); 
-    outs() << " is integer: " << type->isIntegerTy() << " pointer: " << type->isPointerTy() << " structure " << type->isStructTy() << " array " << type->isArrayTy() << "\n";
-    switch(type->getTypeID()) 
+    m_portList.push_back(HdlPort((llvm::Value*)&*I));                                       
+    HdlPort &port = m_portList.back();
+    port.m_property       = analyzeValue(&*I);
+    port.m_property.stype = HdlSignalType::inputType;
+    //auto type = I->getType(); 
+    //outs() << " is integer: " << type->isIntegerTy() << " pointer: " << type->isPointerTy() << " structure " << type->isStructTy() << " array " << type->isArrayTy() << "\n";
+    
+  }
+
+  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
+    
+    for(llvm::Use &use : I->operands()) {
+      llvm::Value* val = use.get();      
+      if (! isIn(m_variableList, val) && ! isIn(m_portList, val)) {
+        m_variableList.push_back(HdlVariable((llvm::Value*)val));
+        HdlVariable &var = m_variableList.back();
+        var.m_property = analyzeValue(val);
+        var.m_property.stype = HdlSignalType::regType;
+        LOG_S(6) << "Collecting " << val << "(" << val->getName().str() << ")";
+        val->dump();
+      } else 
+        LOG_S(6) << "Already in " << val;      
+      
+    }
+  }    
+   
+}
+
+HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
+{ 
+  HdlProperty property;
+  switch(value->getType()->getTypeID()) 
     {
-      case llvm::Type::IntegerTyID :  {
-                                        m_portList.push_back(HdlPort((llvm::Value*)&*I));                                       
-                                        HdlPort &port = m_portList.back();
-                                        port.m_property.vtype = HdlVectorType::scalarType;
-                                        port.m_property.stype = HdlSignalType::inputType;
-                                        port.m_property.bitwidth = type->getIntegerBitWidth();                                        
+      case llvm::Type::IntegerTyID :  { 
+                                        property.vtype = HdlVectorType::scalarType;
+                                        property.stype = HdlSignalType::inputType;
+                                        property.bitwidth = value->getType()->getIntegerBitWidth();                                        
                                         break; 
                                       }
       case llvm::Type::PointerTyID :  {
-                                        m_portList.push_back(HdlPort((llvm::Value*)&*I));
-                                        HdlPort &port = m_portList.back();
-                                        port.m_property = analyzePointer(&*I);
-                                        port.m_property.stype = HdlSignalType::inputType;
-                                        
-                                                                                  
+                                        property = analyzePointer(value);                                        
                                         break;
                                       }
       default :   
         LOG_S(0) << "Not supported type at the port" << "\n";
         break;
     }
-  }
   
-  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-    if (I->getOpcode() == llvm::Instruction::Ret) {
-      for(llvm::Use &use : I->operands())
-      { 
-        llvm::Value* val = use.get();
-        m_portList.push_back(HdlPort((llvm::Value*)val));
-        HdlPort &port = m_portList.back();
-        port.m_property.vtype = HdlVectorType::scalarType;
-        port.m_property.stype = HdlSignalType::outputType;
-        assert(val->getType()->getTypeID()==llvm::Type::IntegerTyID);
-        port.m_property.bitwidth = val->getType()->getIntegerBitWidth();
-      }
-    }
-  }    
-
-  //Get Return type of outport 
-
-  // F is a pointer to a Function instance
-  //Iterate over Instructions. Each instruction iterate over 
-  //for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I)
-    //llvm::outs() << *I << "\n";
-   
+  return property;
 }
 
 HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
 {
-  outs() << "Pointer analysis \n";
+  LOG_S(4) << "Pointer analysis \n";
   bool staticIndex = true;
-  int maxIdx = 0;
+  int maxIdx = -1;
   const DataLayout & DL = m_irModule->getDataLayout();
 
   HdlProperty property;
   assert(valuePointerTy->getType()->getPointerElementType()->getTypeID() == llvm::Type::IntegerTyID);
   for(llvm::User * U : valuePointerTy->users())
   {
-    outs() << *U << " valueID: " << U->getValueID() << "\n";    
+    //outs() << *U << " valueID: " << U->getValueID() << "\n";    
     if (llvm::Instruction::classof(U)){            
       llvm::Instruction* I = (llvm::Instruction*)(U);
       switch(I->getOpcode())
@@ -95,27 +97,31 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                       }
                                                   else{ 
                                                       assert(llvm::ConstantInt::classof(val));
-                                                      outs() << "Value of operand " << ((llvm::ConstantInt*)val)->getZExtValue() << "\n";
+                                                      //outs() << "Value of operand " << ((llvm::ConstantInt*)val)->getZExtValue() << "\n";
                                                       maxIdx = std::max(maxIdx, (int)((llvm::ConstantInt*)val)->getZExtValue());
                                                     }
                                                           
                                                 }
         case llvm::Instruction::Load          : break;
+        case llvm::Instruction::Store         : break;
         default : staticIndex = false; outs() << I->getOpcodeName() << " is not supported \n";
       }
     }
   }
-  property.vtype = (staticIndex? HdlVectorType::arrayType : HdlVectorType::memoryType);
-  if (property.vtype == HdlVectorType::arrayType) {
+  property.vtype = (maxIdx < 0)? HdlVectorType::scalarType : (staticIndex? HdlVectorType::arrayType : HdlVectorType::memoryType);
+  if (property.vtype == HdlVectorType::scalarType) {
+    property.bitwidth = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
+    property.arraylength = 0;
+  } else if (property.vtype == HdlVectorType::arrayType) {
     property.bitwidth = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
     property.arraylength = maxIdx + 1;
   } else {
-    property.arraylength = DL.getPointerSizeInBits();  
     property.bitwidth    = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
+    property.arraylength = DL.getPointerSizeInBits();  
   }
 
-  outs() << "Indexing is static " << staticIndex << "\n";
-  outs() << "--- end analysis \n";
+  //outs() << "Indexing is static " << staticIndex << "\n";
+  LOG_S(4) << "--- end analysis \n";
   return property;
 } 
 

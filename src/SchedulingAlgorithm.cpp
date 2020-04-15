@@ -36,7 +36,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
   auto F      = scheduler->m_function;
   auto hwd    = &(scheduler->HWD);
   auto cslist = &(scheduler->m_ctrlSteps);
-  auto valueInfoMap   = scheduler->valueInfoMap;
+  auto &valueInfoMap   = scheduler->valueInfoMap;
   auto firstBB = &*(F->begin());
   
   LOG_F(INFO, "SimpleScheduler Visit");  
@@ -63,11 +63,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
       ret.first->second.setBirthTime(firstBB, 0.0);      
     }
 
-    for(const llvm::Use &use : F->operands())
-      { 
-        use.get()->dump();
-      }
-    
+ 
     for(auto BBi = F->begin(), bbe = F->end(); BBi != bbe ; ++BBi)
     {
       LOG_S(6) << " Basic block: " << g_getStdStringName(*BBi);
@@ -150,14 +146,7 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler)
   }
   catch (...) {    
   }
-  for(auto I = valueInfoMap.begin(), E = valueInfoMap.end(); I!=E; ++I)
-    {
-      LOG_S(6) << "Value : " << (I->first) << " name: " << (I->first)->getName().str();
-      LOG_S(6) << "+Birthtime " << (I->second).getBirthTimeBB() << " : " << (I->second).getBirthTimeStep();
-      LOG_S(6) << "+Usetime :  "; 
-      for(auto J = (I->second).useTimeList.begin(), F = (I->second).useTimeList.end(); J!=F; ++J) 
-        LOG_S(6) << "--" << (*J).bb << " : " << (*J).step;
-    }
+
   return 0;
 }
 

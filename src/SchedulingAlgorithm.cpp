@@ -1,8 +1,8 @@
 #include "Scheduler.hpp"
 #include "types.hpp"
-#include "loguru/loguru.hpp"
 #include "ControlStep.hpp"
 #include "ValueLifeInfo.hpp"
+#include "logging/logger.hpp"
 
 #include "llvm/Analysis/DDG.h"
 #include "llvm/ADT/BreadthFirstIterator.h"

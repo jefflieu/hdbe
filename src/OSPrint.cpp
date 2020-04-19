@@ -1,7 +1,6 @@
 
 #include "OSPrint.hpp"
 #include "llvm/ADT/StringRef.h"
-#include "loguru/loguru.hpp"
 
 using namespace std;
 using namespace hdbe;

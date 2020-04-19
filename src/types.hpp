@@ -3,7 +3,7 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/BasicBlock.h"
 #include "llvm/IR/Module.h"
-#include "loguru/loguru.hpp"
+
 
 namespace hdbe {
 
@@ -29,7 +29,8 @@ struct HdlProperty {
   HdlVectorType vtype = HdlVectorType::scalarType;
   HdlSignalType stype = HdlSignalType::combType;
   int  bitwidth = 0;
-  int  arraylength =0;
+  int  arraylength = 0;
+  bool isConstant = false;
 };
 
 
@@ -50,7 +51,6 @@ std::string g_getStdStringName(T& irObject) {return (irObject.getName()).str();}
 */
 #define D_GET_ITEM_PTR(iter) (&(*iter))
 
-#define LLVM_LOG(level, out_msg) do { if (loguru::g_stderr_verbosity >= level) llvm::outs() << out_msg; } while(0)
 
 #define D_IS_CONST_OPERAND(oprnd) (oprnd->getValueID() > llvm::Value::ValueTy::ConstantFirstVal) && (oprnd->getValueID() < llvm::Value::ValueTy::ConstantLastVal)
 

@@ -1,45 +1,45 @@
-#include "DataAnalyzer.hpp"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/raw_ostream.h"
 
-using namespace hdbe;
-using Function = llvm::Function;
-using GlobalValue = llvm::GlobalValue;
-using DataLayout = llvm::DataLayout;
-using Module = llvm::Module;
-using llvm::outs;
+#include "logging/logger.hpp"
+#include "DataAnalyzer.hpp"
 
-void DataAnalyzer::analyze(std::string funcName) 
+#define  DA_DBG 2
+
+using namespace hdbe;
+using Function    = llvm::Function;
+using GlobalValue = llvm::GlobalValue;
+using DataLayout  = llvm::DataLayout;
+using Module      = llvm::Module;
+using Argument    = llvm::Argument;
+using ConstantInt = llvm::ConstantInt;
+
+
+void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
 {
-  Function* F = m_irModule->getFunction(funcName);
+  Function* F = irFunction;
+  auto &portList      = CDI_h->portList; 
+  auto &variableList  = CDI_h->variableList; 
+  
   //Iterate over argument 
   for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(); I != E; ++I)
   {
-    outs() << *I << "\n"; 
-    outs() << "Argument " << I->getName() << " type " << I->getType() << " \n" ; 
-    m_portList.push_back(HdlPort((llvm::Value*)&*I));                                       
-    HdlPort &port = m_portList.back();
-    port.m_property       = analyzeValue(&*I);
-    port.m_property.stype = HdlSignalType::inputType;
-    //auto type = I->getType(); 
-    //outs() << " is integer: " << type->isIntegerTy() << " pointer: " << type->isPointerTy() << " structure " << type->isStructTy() << " array " << type->isArrayTy() << "\n";
-    
+    LOG_S(DA_DBG) << "Argument " << *I << "\n";     
+    portList.push_back(HdlPort((llvm::Value*)&*I));                                       
+    HdlPort &port = portList.back();
+    port.property       = analyzeValue(&*I);    
   }
 
-  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
-    
+  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {    
     for(llvm::Use &use : I->operands()) {
       llvm::Value* val = use.get();      
-      if (! isIn(m_variableList, val) && ! isIn(m_portList, val)) {
-        m_variableList.push_back(HdlVariable((llvm::Value*)val));
-        HdlVariable &var = m_variableList.back();
-        var.m_property = analyzeValue(val);
-        var.m_property.stype = HdlSignalType::regType;
-        LOG_S(6) << "Collecting " << val << "(" << val->getName().str() << ")";
-        val->dump();
+      if (! isIn(variableList, val) && ! isIn(portList, val)) {
+        variableList.push_back(HdlVariable((llvm::Value*)val));
+        HdlVariable &var = variableList.back();
+        var.property = analyzeValue(val);
+        LOG_S(DA_DBG) << val << " : " << *val << "\n";        
       } else 
-        LOG_S(6) << "Already in " << val;      
-      
+        LOG_S(DA_DBG) << val << " : already in the list\n";            
     }
   }    
    
@@ -52,8 +52,17 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
     {
       case llvm::Type::IntegerTyID :  { 
                                         property.vtype = HdlVectorType::scalarType;
-                                        property.stype = HdlSignalType::inputType;
-                                        property.bitwidth = value->getType()->getIntegerBitWidth();                                        
+                                        /* 
+                                          Decide of the value is a port or not 
+                                          We currently only support input
+                                        */
+                                        if (Argument::classof(value))
+                                          property.stype = HdlSignalType::inputType;
+                                        else 
+                                          property.stype = HdlSignalType::regType;
+                                        
+                                        property.bitwidth = value->getType()->getIntegerBitWidth();      
+                                        property.isConstant = ConstantInt::classof(value);
                                         break; 
                                       }
       case llvm::Type::PointerTyID :  {
@@ -61,7 +70,7 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                         break;
                                       }
       default :   
-        LOG_S(0) << "Not supported type at the port" << "\n";
+        LOG_S(ERROR) << "Not supported type at the port" << "\n";
         break;
     }
   
@@ -70,16 +79,16 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
 
 HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
 {
-  LOG_S(4) << "Pointer analysis \n";
+  LOG_S(DEEP3) << "Pointer analysis: " << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
   bool staticIndex = true;
   int maxIdx = -1;
-  const DataLayout & DL = m_irModule->getDataLayout();
+  const DataLayout & DL = CDI_h->irModule->getDataLayout();
 
   HdlProperty property;
   assert(valuePointerTy->getType()->getPointerElementType()->getTypeID() == llvm::Type::IntegerTyID);
   for(llvm::User * U : valuePointerTy->users())
   {
-    //outs() << *U << " valueID: " << U->getValueID() << "\n";    
+    LOG_S(DA_DBG) << *U << " valueID: " << U->getValueID() << "\n";    
     if (llvm::Instruction::classof(U)){            
       llvm::Instruction* I = (llvm::Instruction*)(U);
       switch(I->getOpcode())
@@ -104,7 +113,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                 }
         case llvm::Instruction::Load          : break;
         case llvm::Instruction::Store         : break;
-        default : staticIndex = false; outs() << I->getOpcodeName() << " is not supported \n";
+        default : staticIndex = false; LOG_S(ERROR) << I->getOpcodeName() << " is not supported \n";
       }
     }
   }
@@ -120,8 +129,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
     property.arraylength = DL.getPointerSizeInBits();  
   }
 
-  //outs() << "Indexing is static " << staticIndex << "\n";
-  LOG_S(4) << "--- end analysis \n";
+  LOG_S(DA_DBG) << "--- end analysis \n";
   return property;
 } 
 

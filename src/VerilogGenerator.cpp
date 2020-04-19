@@ -23,7 +23,7 @@ std::string VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj)
       case HdlVectorType::arrayType  : decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name) + "[" + std::to_string(obj.m_property.arraylength-1) + ":0]";
       default : break;
     }
-    decl += "//" + std::to_string(regStageNum);
+    //decl += "//" + std::to_string(regStageNum);
   return decl;
 }
 
@@ -150,12 +150,6 @@ std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I, Co
   executor += std::string(buf, size);   
   size = sprintf(buf,".%-10s (%20s));\n\n","result", I->getName().data());  
   executor += std::string(buf, size);   
-  
-  //switch(I->getOpcode()) 
-  //{
-    //case llvm::Instruction::Add : assign += "assign " + I->getName().str() + " = " + I->getOperand(0)->getName().str() + " + " + I->getOperand(1)->getName().str() + ";\n"; break;
-    //case llvm::Instruction::Sub : assign += "assign " + I->getName().str() + " = " + I->getOperand(0)->getName().str() + " - " + I->getOperand(1)->getName().str() + ";\n"; break;
-  //  default: break;
-  //}
+
   return executor;  
 };

@@ -29,7 +29,7 @@ int Accumulate2(int in, _Bool rst) {
 //}
 
 
-int MultiplyAccumulate(int a, int b, int c) {
+int MultiplyAccumulate(const int a, int b, int c) {
   return a*b + c;
 }
 

@@ -99,3 +99,24 @@ uint32_t SchedulingAlgorithm::visit(SimpleScheduler* scheduler, std::string func
   }
 }
 
+
+
+CallGraph callGraph(*Mod);
+Function* func = Mod->getFunction(funcName);  
+  
+
+//LOG_SCOPE_F(INFO, "Will indent all log messages within this scope.");
+//LOG_F(INFO, "I'm hungry for some %.3f!", 3.14159);
+//LOG_F(2, "Will only show if verbosity is 2 or higher");
+//VLOG_F(1, "Use vlog for dynamic log level (integer in the range 0-9, inclusive)");
+//LOG_IF_F(ERROR, 1, "Will only show if badness happens");
+
+
+  //SimpleScheduler scheduler(Mod.get());
+  //SchedulingAlgorithm algo;
+  //scheduler.schedule(algo, funcName);
+  //DataAnalyzer dAnalyzer(Mod.get());
+  //dAnalyzer.analyze(funcName);
+  //VerilogGenerator verilogGen(&scheduler, &dAnalyzer);
+  //verilogGen.write();
+

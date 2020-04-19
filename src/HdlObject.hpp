@@ -5,23 +5,31 @@
 
 namespace hdbe {
 
-std::string to_hexstring(uintptr_t, char);
+using String = std::string;
+using Value  = llvm::Value;
+
+String to_hexstring(uintptr_t, char);
 
 class HdlObject {
-  public: 
-    std::string m_name;
-    llvm::Value* m_irValue;
-    HdlProperty m_property;
+  private:
+    Value* irValue;
 
   public: 
-    HdlObject() { m_name = "noname";}
-    HdlObject(std::string name) : m_name(name) {}
-    HdlObject(llvm::Value* _irVal) : m_irValue(_irVal) {
-      if (m_irValue->hasName())
-        m_name = m_irValue->getName().str();
+    String name;
+    HdlProperty property;
+
+  public: 
+    HdlObject() { name = "noname";}
+    HdlObject(String name) : name(name) {}
+    HdlObject(Value* _irVal) : irValue(_irVal) {
+      if (irValue->hasName())
+        name = irValue->getName().str();
       else 
-        m_name = "unnamed_" + to_hexstring(reinterpret_cast<uintptr_t>(m_irValue), 'H');
+        name = "unnamed_" + to_hexstring(reinterpret_cast<uintptr_t>(irValue), 'H');
     }
+    
+    Value* getIrValue() {return irValue;}
+    
     ~HdlObject() {};    
 };
 
@@ -29,8 +37,8 @@ class HdlObject {
 class HdlPort : public HdlObject {
   
   public: 
-    HdlPort(std::string name) : HdlObject(name) {};
-    HdlPort(llvm::Value* _irVal) : HdlObject(_irVal) {};
+    HdlPort(String name) : HdlObject(name) {};
+    HdlPort(Value* _irVal) : HdlObject(_irVal) {};
     ~HdlPort() {};
  
 };
@@ -39,8 +47,8 @@ class HdlPort : public HdlObject {
 class HdlVariable : public HdlObject {
   
   public: 
-    HdlVariable(std::string name) : HdlObject(name) {};
-    HdlVariable(llvm::Value* _irVal) : HdlObject(_irVal) {};
+    HdlVariable(String name) : HdlObject(name) {};
+    HdlVariable(Value* _irVal) : HdlObject(_irVal) {};
     ~HdlVariable() {};
  
 };

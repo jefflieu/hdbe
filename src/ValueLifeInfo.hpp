@@ -13,7 +13,7 @@
 #include "ControlStep.hpp"
 #include "BaseClass.hpp"
 #include "types.hpp"
-#include "loguru/loguru.hpp"
+#include "logging/logger.hpp"
 
 
 

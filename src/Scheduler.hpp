@@ -56,7 +56,7 @@ class Scheduler : public BaseClass {
     //  llvm::DependenceAnalysis DA;  
     //  llvm::DependenceInfo DI   = DA.run(*m_function, FAM);
     //  DDG = new llvm::DataDependenceGraph(*m_function, DI);
-    //  //LLVM_LOG(6, *DDG);
+    //  //LOG(6, *DDG);
     //}
   
 };

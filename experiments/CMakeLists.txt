@@ -31,10 +31,10 @@ llvm_map_components_to_libnames(llvm_libs support core irreader analysis passes)
 # Link against LLVM libraries
 target_link_libraries(ir_parser ${llvm_libs} )
 target_sources(ir_parser PUBLIC  
-    ${dep_root}/loguru/loguru.cpp
-    ${hdlbe_src}/VhdlGenerator.cpp
-    ${hdlbe_src}/VerilogGenerator.cpp
-    ${hdlbe_src}/HDLUtil.cpp
     ${hdlbe_src}/OSPrint.cpp
+    ${hdlbe_src}/HDLUtil.cpp
+    ${hdlbe_src}/logging/logger.cpp
     ${hdlbe_src}/DataAnalyzer.cpp
-    ${hdlbe_src}/SchedulingAlgorithm.cpp)
+    ${hdlbe_src}/IRPreprocessor.cpp)
+
+set_property(TARGET ir_parser PROPERTY CXX_STANDARD 17)

@@ -8,6 +8,7 @@
 
 #include "logging/logger.hpp"
 #include "HdlObject.hpp"
+#include "HdlState.hpp"
 
 namespace hdbe {
 
@@ -28,7 +29,7 @@ class ControlDataInfo {
     std::list<HdlPort     > portList;
     std::list<HdlVariable > variableList;
     std::list<HdlVariable > memOpsList;
-  
+    std::list<HdlState    > stateList;    
 
   public :
     ControlDataInfo () {};     

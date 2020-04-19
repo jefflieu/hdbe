@@ -1,14 +1,26 @@
 #pragma once 
 
 #include "llvm/IR/Value.h"
-#include "OSPrint.hpp"
+#include "llvm/ADT/StringExtras.h"
+
+#include "types.hpp"
 
 namespace hdbe {
 
 using String = std::string;
 using Value  = llvm::Value;
 
-String to_hexstring(uintptr_t, char);
+enum class HdlVectorType {scalarType, arrayType, memoryType};
+enum class HdlSignalType {combType, regType, inputType, outputType};
+
+struct HdlProperty {
+  HdlVectorType vtype = HdlVectorType::scalarType;
+  HdlSignalType stype = HdlSignalType::combType;
+  int  bitwidth = 0;
+  int  arraylength = 0;
+  bool isConstant = false;
+};
+
 
 class HdlObject {
   private:
@@ -25,7 +37,7 @@ class HdlObject {
       if (irValue->hasName())
         name = irValue->getName().str();
       else 
-        name = "unnamed_" + to_hexstring(reinterpret_cast<uintptr_t>(irValue), 'H');
+        name = "unnamed_" + llvm::utohexstr(reinterpret_cast<uintptr_t>(irValue));
     }
     
     Value* getIrValue() {return irValue;}

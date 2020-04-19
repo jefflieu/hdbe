@@ -22,19 +22,6 @@ typedef const llvm::Function* Const_Function_h;
 typedef const llvm::BasicBlock* Const_BasicBlock_h;
 
 
-enum class HdlVectorType {scalarType, arrayType, memoryType};
-enum class HdlSignalType {combType, regType, inputType, outputType};
-
-struct HdlProperty {
-  HdlVectorType vtype = HdlVectorType::scalarType;
-  HdlSignalType stype = HdlSignalType::combType;
-  int  bitwidth = 0;
-  int  arraylength = 0;
-  bool isConstant = false;
-};
-
-
-
 /* 
   These helper helps to convert to STD string from StringRef, 
   Work both cases of argument being pointer or a reference

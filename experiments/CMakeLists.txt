@@ -30,8 +30,7 @@ llvm_map_components_to_libnames(llvm_libs support core irreader analysis passes)
 
 # Link against LLVM libraries
 target_link_libraries(ir_parser ${llvm_libs} )
-target_sources(ir_parser PUBLIC  
-    ${hdlbe_src}/OSPrint.cpp
+target_sources(ir_parser PUBLIC      
     ${hdlbe_src}/HDLUtil.cpp
     ${hdlbe_src}/logging/logger.cpp
     ${hdlbe_src}/DataAnalyzer.cpp

@@ -10,55 +10,32 @@
 
 
 #include "HDLUtil.hpp"
-#include "BaseClass.hpp"
-#include "Scheduler.hpp"
-#include "DataAnalyzer.hpp"
+#include "ControlDataInfo.hpp"
 #include "HdlObject.hpp"
 
 
 namespace hdbe {
-class Scheduler;
-class DataAnalyzer;
+
 class HdlObject;
 class HdlPort;
 
-class CodeGenerator : public BaseClass {  
+class CodeGenerator {  
   
-  protected: 
-    Scheduler *scheduler;  
-    DataAnalyzer *analyzer;  
-    std::string getFunctionName();
+  protected:     
+    ControlDataInfo *CDI_h;
     
   public: 
     CodeGenerator() {};
-    CodeGenerator(Scheduler *_scheduler, DataAnalyzer *_analyzer): scheduler(_scheduler), analyzer(_analyzer) {};
+    CodeGenerator(ControlDataInfo *_CDI_h) : CDI_h(_CDI_h) {};
     ~CodeGenerator() {};    
-};
-
-class VhdlGenerator : public CodeGenerator {
-  
-  public: 
-    VhdlGenerator() {};
-    VhdlGenerator(Scheduler *_scheduler, DataAnalyzer* _analyzer): CodeGenerator(_scheduler, _analyzer){};
-    ~VhdlGenerator() {};
-    
-    void write();
-  
-  private: 
-    std::ostream& writeLibrary(std::ostream& os);
-    std::ostream& writePorts(std::ostream& os);    
-    std::ostream& writeSignalDeclaration(std::ostream& os) {};    
-    std::ostream& writeStateSquence(std::ostream& os);        
-    std::ostream& writeInstructions(std::ostream& os) {};            
-    
 };
 
 class VerilogGenerator : public CodeGenerator {
   
   public: 
     VerilogGenerator() {};
-    VerilogGenerator(Scheduler *_scheduler, DataAnalyzer* _analyzer): CodeGenerator(_scheduler, _analyzer){};
-    ~VerilogGenerator() {};
+    VerilogGenerator(ControlDataInfo *_CDI_h) : CodeGenerator(_CDI_h) {}
+    ~VerilogGenerator() {}
     
     void write();
   

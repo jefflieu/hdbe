@@ -4,32 +4,52 @@
 
 using namespace hdbe;
 
+void VerilogGenerator::write() 
+{
+  std::string filename = "Test.sv";
+  std::ofstream os(filename, std::ofstream::out);  
+  writePorts(os);
+  
+  writeSignalDeclaration(os);
+
+  writeStateSquence(os);
+  
+  writeInstructions(os);
+
+  os << VERILOG_DECL_MODULE_END("NONE");    
+  os.close();  
+};
+
+
 std::string VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj)
 {   
-    std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;    
-    std::string decl;
-    unsigned regStageNum = info[obj.m_irValue].getRegisterStage();
-    decl = (obj.m_property.stype == HdlSignalType::inputType)?"input ":(
-              (obj.m_property.stype == HdlSignalType::outputType)?"output ":"  "
+    std::string decl("None");    
+    //std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;    
+    //unsigned regStageNum = info[obj.m_irValue].getRegisterStage();
+    decl = (obj.property.stype == HdlSignalType::inputType)?"input ":(
+              (obj.property.stype == HdlSignalType::outputType)?"output ":"  "
             );
-    switch (obj.m_property.vtype)
+    switch (obj.property.vtype)
     {
-      case HdlVectorType::scalarType : if (obj.m_property.bitwidth > 1) 
-                                         decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name);
+      case HdlVectorType::scalarType : if (obj.property.bitwidth > 1) 
+                                         decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name;
                                        else 
-                                         decl += "logic " + makeHdlName(obj.m_name);
+                                         decl += "bit " + obj.name;
                                        break;
       case HdlVectorType::memoryType : decl += "--Memory port" ; break;
-      case HdlVectorType::arrayType  : decl += "logic [" + std::to_string(obj.m_property.bitwidth-1) + ":0] " + makeHdlName(obj.m_name) + "[" + std::to_string(obj.m_property.arraylength-1) + ":0]";
+      case HdlVectorType::arrayType  : decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name + "[" + std::to_string(obj.property.arraylength-1) + ":0]";
       default : break;
     }
     //decl += "//" + std::to_string(regStageNum);
+    
   return decl;
 }
 
 std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
-{   
-  for(auto I = analyzer->m_variableList.begin(), E = analyzer->m_variableList.end(); I!=E; ++I)
+{  
+  auto &variableList = CDI_h->variableList;
+  
+  for(auto I = variableList.begin(), E = variableList.end(); I!=E; ++I)
   {
     HdlVariable &var = *I;
     os << writeHdlObjDeclaration(var) + ";\n";
@@ -38,10 +58,13 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
 
 
 std::ostream& VerilogGenerator::writePorts(std::ostream& os){
-  os << VERILOG_DECL_MODULE(getFunctionName());
+  auto &portList = CDI_h->portList;
+  auto F         = CDI_h->irFunction;
+  
+  os << VERILOG_DECL_MODULE(F->getName().str());
     
   //Iterate over analyzer.m_portList;  
-  for(auto I = analyzer->m_portList.begin(), E = analyzer->m_portList.end(); I!=E; ++I)
+  for(auto I = portList.begin(), E = portList.end(); I!=E; ++I)
   {
     HdlPort& port = *I;
     os << writeHdlObjDeclaration(port) + ",\n";
@@ -52,6 +75,7 @@ std::ostream& VerilogGenerator::writePorts(std::ostream& os){
 };
 
 std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
+  /*
   std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
   std::string declare;
   std::string assign;
@@ -79,27 +103,12 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   os << assign;
   os << "func_done <= " + ret_state + VERILOG_ENDL;
   os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+  */
   return os;
 };
 
-void VerilogGenerator::write() 
-{
-  std::string filename = "Test.v";
-  std::ofstream os(filename, std::ofstream::out);  
-  writePorts(os);
-  
-  writeSignalDeclaration(os);
-
-  writeStateSquence(os);
-  
-  writeInstructions(os);
-
-  os << VERILOG_DECL_MODULE_END(getFunctionName());    
-  os.close();  
-};
-
-
 std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
+  /*
   std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
   
   os << " // Instructions " << "\n\n";  
@@ -112,14 +121,16 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
         os << writeOneInstruction(*I, *cs);
       }
   }  
+  */
   return os;
 };
 
 std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I, ControlStep& s)
 {
+  std::string executor;
+  /*
   std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
   std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;
-  std::string executor;
   char buf[256];
   unsigned size = 0;
   std::string state = makeHdlStateName(s.getbbName(), s.getId());
@@ -150,6 +161,6 @@ std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I, Co
   executor += std::string(buf, size);   
   size = sprintf(buf,".%-10s (%20s));\n\n","result", I->getName().data());  
   executor += std::string(buf, size);   
-
+  */
   return executor;  
 };

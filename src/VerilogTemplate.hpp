@@ -7,10 +7,10 @@
 "module " << __name << " ( \n\n" 
 
 #define VERILOG_HDBE_PORTS "\
-  input  logic func_start , \n\
-  output logic func_done  , \n\
-  input  logic func_clk   , \n\
-  input  logic func_rst   \n\n\
+input  bit func_start , \n\
+output bit func_done  , \n\
+input  bit func_clk   , \n\
+input  bit func_rst   \n\n\
 ); \n"
 
 #define VERILOG_DECL_MODULE_END(__name) "\

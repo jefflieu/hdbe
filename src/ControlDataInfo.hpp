@@ -11,20 +11,23 @@
 
 namespace hdbe {
 
-using Module = llvm::Module;
-using Function = llvm::Function;
+using Module      = llvm::Module;
+using Function    = llvm::Function;
+using Instruction = llvm::Instruction;
 
 class ControlDataInfo {
   
   friend class DataAnalyzer;
+  friend class VerilogGenerator;
   
   protected: 
     Module   *irModule   = nullptr; 
     Function *irFunction = nullptr;
     
   
-    std::vector<HdlPort> portList;
-    std::vector<HdlVariable> variableList;
+    std::list<HdlPort     > portList;
+    std::list<HdlVariable > variableList;
+    std::list<HdlVariable > memOpsList;
   
 
   public :

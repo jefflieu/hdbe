@@ -20,6 +20,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   Function* F = irFunction;
   auto &portList      = CDI_h->portList; 
   auto &variableList  = CDI_h->variableList; 
+  auto &memOpsList    = CDI_h->memOpsList; 
   
   //Iterate over argument 
   for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(); I != E; ++I)
@@ -30,10 +31,16 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
     port.property       = analyzeValue(&*I);    
   }
 
-  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {    
+  for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
+    //Filter out memory related operations 
+    if ( I->getOpcode() >= llvm::Instruction::MemoryOpsBegin &&  I->getOpcode() <= llvm::Instruction::MemoryOpsEnd) 
+     {
+       memOpsList.push_back(HdlVariable((llvm::Value*)&*I));
+       continue;
+     }
     for(llvm::Use &use : I->operands()) {
       llvm::Value* val = use.get();      
-      if (! isIn(variableList, val) && ! isIn(portList, val)) {
+      if (! isIn(variableList, val) && ! isIn(portList, val) && ! isIn(memOpsList, val)) {
         variableList.push_back(HdlVariable((llvm::Value*)val));
         HdlVariable &var = variableList.back();
         var.property = analyzeValue(val);
@@ -66,7 +73,7 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                         break; 
                                       }
       case llvm::Type::PointerTyID :  {
-                                        property = analyzePointer(value);                                        
+                                        property = analyzePointer(value);                                               
                                         break;
                                       }
       default :   
@@ -79,7 +86,7 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
 
 HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
 {
-  LOG_S(DEEP3) << "Pointer analysis: " << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
+  LOG_S(DA_DBG) << "Pointer analysis: " << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
   bool staticIndex = true;
   int maxIdx = -1;
   const DataLayout & DL = CDI_h->irModule->getDataLayout();
@@ -117,6 +124,12 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
       }
     }
   }
+  
+  if (Argument::classof(valuePointerTy))
+    property.stype = HdlSignalType::inputType;
+  else 
+    property.stype = HdlSignalType::regType;
+  property.isConstant = ConstantInt::classof(valuePointerTy);  
   property.vtype = (maxIdx < 0)? HdlVectorType::scalarType : (staticIndex? HdlVectorType::arrayType : HdlVectorType::memoryType);
   if (property.vtype == HdlVectorType::scalarType) {
     property.bitwidth = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
@@ -129,7 +142,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
     property.arraylength = DL.getPointerSizeInBits();  
   }
 
-  LOG_S(DA_DBG) << "--- end analysis \n";
+  LOG_S(DA_DBG) << " end analysis \n";
   return property;
 } 
 

@@ -18,7 +18,7 @@ using Function = llvm::Function;
 class DataAnalyzer {
 
   template<typename T> 
-  bool isIn(std::vector<T>& v, llvm::Value* val){
+  bool isIn(std::list<T>& v, llvm::Value* val){
     for(auto I = v.begin(), E = v.end(); I!=E; ++I)
       {
         if ((*I).getIrValue()  == val) return true;

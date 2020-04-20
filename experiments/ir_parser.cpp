@@ -13,6 +13,7 @@
 #include "IRPreprocessor.hpp"
 #include "DataAnalyzer.hpp"
 #include "CodeGenerator.hpp"
+#include "InstructionScheduler.hpp"
 
 using namespace llvm;
 using namespace hdbe;
@@ -43,6 +44,8 @@ int main(int argc, char **argv) {
   IRPrep.transformNames();
   DataAnalyzer DAnalyzer(&CDI);
   DAnalyzer.analyze();
+  InstructionScheduler IS(&CDI);
+  IS.schedule();
   VerilogGenerator VGen(&CDI);
   VGen.write();
   

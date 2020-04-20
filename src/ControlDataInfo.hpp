@@ -9,18 +9,22 @@
 #include "logging/logger.hpp"
 #include "HdlObject.hpp"
 #include "HdlState.hpp"
+#include "ValueLifeInfo.hpp"
+
 
 namespace hdbe {
 
 using Module      = llvm::Module;
 using Function    = llvm::Function;
 using Instruction = llvm::Instruction;
+using Value       = llvm::Value;
 
 class ControlDataInfo {
   
   friend class DataAnalyzer;
   friend class VerilogGenerator;
-  
+  friend class InstructionScheduler;
+
   protected: 
     Module   *irModule   = nullptr; 
     Function *irFunction = nullptr;
@@ -30,6 +34,7 @@ class ControlDataInfo {
     std::list<HdlVariable > variableList;
     std::list<HdlVariable > memOpsList;
     std::list<HdlState    > stateList;    
+    std::map<Value*, ValueLifeInfo> valueInfoMap;
 
   public :
     ControlDataInfo () {};     
@@ -43,6 +48,9 @@ class ControlDataInfo {
       }
     ~ControlDataInfo () {}
 
+    inline auto addValueInfo (Value* val) {
+      return valueInfoMap.insert(std::pair<Value*, ValueLifeInfo>(val, ValueLifeInfo(val)));
+    }
 
 };
 

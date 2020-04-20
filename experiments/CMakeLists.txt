@@ -35,6 +35,8 @@ target_sources(ir_parser PUBLIC
     ${hdlbe_src}/logging/logger.cpp
     ${hdlbe_src}/DataAnalyzer.cpp
     ${hdlbe_src}/VerilogGenerator.cpp
-    ${hdlbe_src}/IRPreprocessor.cpp)
+    ${hdlbe_src}/IRPreprocessor.cpp
+    ${hdlbe_src}/ValueLifeInfo.cpp
+    ${hdlbe_src}/InstructionScheduler.cpp)
 
 set_property(TARGET ir_parser PROPERTY CXX_STANDARD 17)

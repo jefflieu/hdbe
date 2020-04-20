@@ -10,7 +10,7 @@
 #include "HdlObject.hpp"
 #include "HdlState.hpp"
 #include "ValueLifeInfo.hpp"
-
+#include "HardwareDescription.hpp"
 
 namespace hdbe {
 
@@ -35,6 +35,8 @@ class ControlDataInfo {
     std::list<HdlVariable > memOpsList;
     std::list<HdlState    > stateList;    
     std::map<Value*, ValueLifeInfo> valueInfoMap;
+
+    HardwareDescription     HWD;
 
   public :
     ControlDataInfo () {};     

@@ -107,7 +107,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                 {
                                                   llvm::Value* val = use.get();                                      
                                                   if (val == valuePointerTy) continue; 
-                                                  if (!(D_IS_CONST_OPERAND(val))) {
+                                                  if (!llvm::Constant::classof(val)) {
                                                       staticIndex = false; 
                                                       break;
                                                       }

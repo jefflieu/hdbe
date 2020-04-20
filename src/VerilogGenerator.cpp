@@ -125,7 +125,7 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
   return os;
 };
 
-std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I, ControlStep& s)
+std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I)
 {
   std::string executor;
   /*

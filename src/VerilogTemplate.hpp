@@ -21,6 +21,10 @@ endmodule //" << __name << "\n\n"
 always@(posedge func_clk) \n\
 begin: " << #__name << "\n\n"
 
+#define VERILOG_VAR_DECL(_type, name) (std::string(#_type" ") + name)
+
+#define VERILOG_VEC_DECL(_type, size, name) (std::string(#_type"  [") + std::to_string(size-1) + std::string(":0] ") + name)
+
 #define VERILOG_STATEMENT(statement)  "\
   "<< statement << ";\n"
 

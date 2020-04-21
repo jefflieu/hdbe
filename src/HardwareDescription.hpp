@@ -3,15 +3,13 @@
 #include <list> 
 
 
-#include "BaseClass.hpp"
-
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Instructions.h"
 
 namespace hdbe {
 
-class HardwareDescription : public BaseClass {
+class HardwareDescription {
   
   private: 
     

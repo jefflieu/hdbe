@@ -4,9 +4,11 @@
 
 using namespace hdbe;
 
+using String = std::string;
+
 void VerilogGenerator::write() 
 {
-  std::string filename = "Test.sv";
+  String filename = "Test.sv";
   std::ofstream os(filename, std::ofstream::out);  
   writePorts(os);
   
@@ -21,26 +23,23 @@ void VerilogGenerator::write()
 };
 
 
-std::string VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj)
+String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
 {   
-    std::string decl("None");    
-    //std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;    
-    //unsigned regStageNum = info[obj.m_irValue].getRegisterStage();
+    String decl("None");    
     decl = (obj.property.stype == HdlSignalType::inputType)?"input ":(
               (obj.property.stype == HdlSignalType::outputType)?"output ":"  "
             );
     switch (obj.property.vtype)
     {
       case HdlVectorType::scalarType : if (obj.property.bitwidth > 1) 
-                                         decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name;
+                                         decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, (obj.name + tag));
                                        else 
-                                         decl += "bit " + obj.name;
+                                         decl += VERILOG_VAR_DECL(bit, (obj.name + tag));
                                        break;
       case HdlVectorType::memoryType : decl += "--Memory port" ; break;
-      case HdlVectorType::arrayType  : decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name + "[" + std::to_string(obj.property.arraylength-1) + ":0]";
+      case HdlVectorType::arrayType  : decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name + tag + "[" + std::to_string(obj.property.arraylength-1) + ":0]";
       default : break;
     }
-    //decl += "//" + std::to_string(regStageNum);
     
   return decl;
 }
@@ -48,11 +47,18 @@ std::string VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj)
 std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
 {  
   auto &variableList = CDI_h->variableList;
-  
+  auto &VIM          = CDI_h->valueInfoMap;
   for(auto I = variableList.begin(), E = variableList.end(); I!=E; ++I)
   {
     HdlVariable &var = *I;
-    os << writeHdlObjDeclaration(var) + ";\n";
+    //for each signal, get live time 
+    int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
+    int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
+    for(uint32_t i = birthTime; i <= liveTime; i++)
+      {
+        String tag = "_" + std::to_string(i);
+        os << writeHdlObjDeclaration(var, tag) + ";\n";
+      }
   }
 }
 
@@ -75,25 +81,25 @@ std::ostream& VerilogGenerator::writePorts(std::ostream& os){
 };
 
 std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
-  /*
-  std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
-  std::string declare;
-  std::string assign;
-  std::string ret_state;
+  
+  auto &stateList = CDI_h->stateList;
+  String declare;
+  String assign;
+  String ret_state;
+
   os << " // State sequence " << "\n\n";  
   
-  for(auto cs = statelist.begin(); cs!=statelist.end(); cs++)
+  for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
   {    
-    ControlStep& s = *cs;
-    std::string this_state = makeHdlStateName(s.getbbName(), s.getId());
-    declare += ("logic " + this_state + ";\n");                  
-    if (s.isBranch()) {
-      if (s.isReturn()) {
-        ret_state = this_state;
+    HdlState & state = *state_i;
+    declare += VERILOG_VAR_DECL(bit, state.getName().str()) + ";\n";                  
+    if (state.isBranch()) {
+      if (state.isReturn()) {
+        ret_state = state.getName();
       }
     } else {
-      std::string next_state = makeHdlStateName(s.getbbName(), s.getId()+ 1);
-      assign += next_state + VERILOG_ASSIGN + this_state + VERILOG_ENDL;      
+      String next_state = makeHdlStateName( String(state.getbbName()), state.id + 1);
+      assign += next_state + VERILOG_ASSIGN + state.getName().str() + VERILOG_ENDL;      
     }
   }
 
@@ -103,7 +109,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   os << assign;
   os << "func_done <= " + ret_state + VERILOG_ENDL;
   os << VERILOG_CLKPROCESS_BOTTOM(state_process);
-  */
+  
   return os;
 };
 
@@ -125,42 +131,42 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
   return os;
 };
 
-std::string VerilogGenerator::writeOneInstruction(const llvm::Instruction* I)
+String VerilogGenerator::writeOneInstruction(const llvm::Instruction* I)
 {
-  std::string executor;
+  String executor;
   /*
   std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
   std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;
   char buf[256];
   unsigned size = 0;
-  std::string state = makeHdlStateName(s.getbbName(), s.getId());
+  String state = makeHdlStateName(s.getbbName(), s.getId());
   
   if (I->isBinaryOp()) {    
     size = sprintf(buf,"binary_unit #(\n");
-    executor += std::string(buf, size);     
+    executor += String(buf, size);     
     size = sprintf(buf,".BITWIDTH (%d),\n", I->getOperand(0)->getType()->getIntegerBitWidth());
-    executor += std::string(buf, size); 
+    executor += String(buf, size); 
     size = sprintf(buf,".OPCODE  (\"%s\"))\n", I->getOpcodeName());
-    executor += std::string(buf, size); 
+    executor += String(buf, size); 
   } else {  
     size = sprintf(buf,"%s_unit ", I->getOpcodeName());
-    executor += std::string(buf, size);
+    executor += String(buf, size);
     //size = sprintf(buf,"#(.BITWIDTH (%d))n", I->getType()->getIntegerBitWidth());
-    //executor += std::string(buf, size); 
+    //executor += String(buf, size); 
   }  
   size = sprintf(buf,"I%lx(\n", reinterpret_cast<uintptr_t>(I));
-  executor += std::string(buf, size);
+  executor += String(buf, size);
   for(const llvm::Use &use : I->operands())
     { 
       size = sprintf(buf,".operand[%d] (%20s),\n", use.getOperandNo(), (*use).getName().data());
-      executor += std::string(buf, size); 
+      executor += String(buf, size); 
     }
   size = sprintf(buf,".%-10s (%20s),\n","enable", &state[0]);
-  executor += std::string(buf, size);
+  executor += String(buf, size);
   size = sprintf(buf,".%-10s (%20s),\n","clk", "func_clk");
-  executor += std::string(buf, size);   
+  executor += String(buf, size);   
   size = sprintf(buf,".%-10s (%20s));\n\n","result", I->getName().data());  
-  executor += std::string(buf, size);   
+  executor += String(buf, size);   
   */
   return executor;  
 };

@@ -36,13 +36,14 @@ void InstructionScheduler::schedule(Function * irFunction)
         
     
   LOG_S(IS_DBG) << "Assigning birth time to global variables and arguments \n";      
-    
+  
+  
   //Assign birth time for Global Variable 
   for(auto gv_i = M.global_begin(), gv_end = M.global_end(); gv_i != gv_end; ++gv_i)
     {
       LOG_S(IS_DBG) << *gv_i << "\n" ;
       auto ret = CDI_h->addValueInfo(&*gv_i);
-      ret.first->second.setBirthTime(&entryBlock, 0.0);
+      ret.first->second.setBirthTime(nullptr, 0.0);
     }
 
   //Assign valid_time for Arguments:   
@@ -50,7 +51,7 @@ void InstructionScheduler::schedule(Function * irFunction)
     {
       LOG_S(IS_DBG) << *arg_i << "\n";
       auto ret = CDI_h->addValueInfo(&*arg_i);
-      ret.first->second.setBirthTime(&entryBlock, 0.0);     
+      ret.first->second.setBirthTime(nullptr, 0.0);     
     }
 
   LOG(INFO, "Collecting instructions for scheduling");
@@ -77,10 +78,9 @@ void InstructionScheduler::schedule(Function * irFunction)
     //For each basic block do until all instructions in that is scheduled 
     while( ! instructions.empty()) 
     {
-
       stateList.push_back(HdlState(&*bb_i, step));
-      HdlState & state  = stateList.back();
-        
+      HdlState & state  = stateList.back(); 
+      
       //Iterate the list and see if the instruction can be scheduled  
       //Instruction can be scheduled when all the operands are valid 
       for (auto list_i = instructions.begin(), list_end = instructions.end(); list_i != list_end;)
@@ -100,7 +100,7 @@ void InstructionScheduler::schedule(Function * irFunction)
               for(const llvm::Use &use : I->operands())
               {
                 llvm::Value* val = use.get();
-                LOG_S(IS_DBG + 3) << val << "\n";
+                LOG_S(IS_DBG + 3) << val << " " << *val << "\n";
                 
                 //Don't check if the operand is constant
                 if (llvm::Constant::classof(val)) continue;
@@ -111,7 +111,7 @@ void InstructionScheduler::schedule(Function * irFunction)
                   break;
                 }
 
-                float operand_valid = VIM[val].birthTime.step;
+                float operand_valid = VIM[val].birthTime.time;
                
                 if (dependency_valid < operand_valid) dependency_valid = operand_valid;
                               
@@ -122,7 +122,7 @@ void InstructionScheduler::schedule(Function * irFunction)
 
           float valid_time = HWD.getValidTime(I, dependency_valid);
 
-          LOG_S(IS_DBG + 1) << "Timing info: " << dependency_valid << " " << valid_time;
+          LOG_S(IS_DBG + 1) << "Timing info: " << dependency_valid << " " << valid_time << "\n";
                   
           
           //Ok to be schedule 
@@ -135,15 +135,15 @@ void InstructionScheduler::schedule(Function * irFunction)
             
             auto ret = CDI_h->addValueInfo(I);
             
-            ret.first->second.setBirthTime(&*bb_i, valid_time);
+            ret.first->second.setBirthTime(&state, valid_time);
             
-            LOG_S(IS_DBG) << "ok to be scheduled, valid time " << ret.first->second.birthTime.step << "\n";            
+            LOG_S(IS_DBG) << "ok to be scheduled, valid time " << ret.first->second.birthTime.time << "\n";            
             
             //Update usage time 
             //The instruction is scheduled, we update the operands useage 
             for(const llvm::Use &use : I->operands())
               {
-                VIM[(llvm::Value*)use.get()].addUseTime(&*bb_i, step);
+                VIM[(llvm::Value*)use.get()].addUseTime(&state, step);
               }
             
             //Finally erase the item 

@@ -27,8 +27,12 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   {
     LOG_S(DA_DBG) << "Argument " << *I << "\n";     
     portList.push_back(HdlPort((llvm::Value*)&*I));                                       
-    HdlPort &port = portList.back();
-    port.property       = analyzeValue(&*I);    
+    HdlPort &port       = portList.back();
+    port.property       = analyzeValue(&*I);
+    variableList.push_back(HdlVariable((llvm::Value*)&*I));
+    HdlVariable &var    = variableList.back();
+    var.property        = analyzeValue(&*I);
+    var.property.stype  = HdlSignalType::regType;   
   }
 
   for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {

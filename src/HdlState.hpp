@@ -9,7 +9,6 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/BasicBlock.h"
 
-#include "types.hpp"
 #include "HardwareDescription.hpp"
 #include "HdlObject.hpp"
 
@@ -26,16 +25,16 @@ class HdlState : public HdlObject {
   public: 
     std::list<Instruction* > instructionList;        
     Instruction* termInstruction = nullptr;
-    BasicBlock *BB_h = nullptr;        
+    BasicBlock * block = nullptr;        
     int id = 0;
     String name = "state_00";
   
   public: 
-    HdlState (BasicBlock *bb, int _id) :  BB_h(bb), id(_id) { name = "state_" + BB_h->getName().str() + std::to_string(id);}
+    HdlState (BasicBlock *bb, int _id) :  block(bb), id(_id) { name = "state_" + block->getName().str() + std::to_string(id);}
     ~HdlState() {}
 
-    StringRef   getbbName() {return BB_h->getName();}
-    String      getbbNameStr() {return BB_h->getName().str();}
+    StringRef   getbbName() {return block->getName();}
+    String      getbbNameStr() {return block->getName().str();}
     StringRef   getName() {return StringRef(name);}
     
     

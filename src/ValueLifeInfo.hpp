@@ -11,7 +11,7 @@
 #include "logging/logger.hpp"
 
 
-
+#include "HdlState.hpp"
 
 using Value = llvm::Value;
 using BasicBlock = llvm::BasicBlock;
@@ -20,8 +20,8 @@ using BasicBlock = llvm::BasicBlock;
 namespace hdbe {
 class ValueLifeInfo {
   struct TimePoint {    
-    BasicBlock *block;
-    float       step;
+    HdlState * state;
+    float      time;
   };
 
   using UseTimeListType = std::vector<TimePoint>;
@@ -36,9 +36,9 @@ class ValueLifeInfo {
     ValueLifeInfo(Value* _val): irValue(_val) {};
     ~ValueLifeInfo() {};
     
-    void setBirthTime(BasicBlock *bb, float step);
+    void setBirthTime(HdlState *state, float time);
     
-    void addUseTime(BasicBlock *bb, float step);
+    void addUseTime(HdlState *state, float time);
     
     UseTimeListType& getUseTimeList() {return useTimeList;}
     

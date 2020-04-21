@@ -3,7 +3,6 @@
 #include "llvm/IR/Value.h"
 #include "llvm/ADT/StringExtras.h"
 
-#include "types.hpp"
 
 namespace hdbe {
 

@@ -19,6 +19,8 @@ namespace hdbe {
 class HdlObject;
 class HdlPort;
 
+using String = std::string;
+
 class CodeGenerator {  
   
   protected:     
@@ -45,7 +47,7 @@ class VerilogGenerator : public CodeGenerator {
     std::ostream& writeSignalDeclaration(std::ostream& os);    
     std::ostream& writeStateSquence(std::ostream& os);        
     std::ostream& writeInstructions(std::ostream& os);
-    std::string writeHdlObjDeclaration(HdlObject& obj);
+    std::string writeHdlObjDeclaration(HdlObject& obj, String tag);
     std::string writeOneInstruction(const llvm::Instruction* I);
 };
 

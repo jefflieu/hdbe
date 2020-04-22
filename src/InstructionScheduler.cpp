@@ -160,6 +160,15 @@ void InstructionScheduler::schedule(Function * irFunction)
         if (step > 10) return;
     }
   }
+
+  //Update the values that has no state bound to it 
+  for(auto map_i = VIM.begin(), map_end = VIM.end(); map_i!=map_end; ++ map_i)
+  {
+    if (! map_i->second.birthTime.state) 
+      {
+        map_i->second.setBirthTime(&stateList.front(),0.0);
+      } 
+  }
   LOG(INFO, "... done ");
 }
 

@@ -1,10 +1,13 @@
 
 #include "CodeGenerator.hpp"
 #include "VerilogTemplate.hpp"
+#include "logging/logger.hpp"
 
 using namespace hdbe;
 
-using String = std::string;
+using String      = std::string;
+using Value       = llvm::Value;
+using Instruction = llvm::Instruction;
 
 void VerilogGenerator::write() 
 {
@@ -114,59 +117,59 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
 };
 
 std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
-  /*
-  std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
+  
+  std::list<HdlVariable> &variableList = CDI_h->variableList;
   
   os << " // Instructions " << "\n\n";  
-  for(auto cs = statelist.begin(); cs!=statelist.end(); cs++)
+  for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
   {    
-    ControlStep& s = *cs;
-    os << " // " << cs->getbbName() << cs->getId() << "\n";    
-    for(auto I = s.m_instrList.begin(), E = s.m_instrList.end(); I!=E; ++I)
-      {
-        os << writeOneInstruction(*I, *cs);
-      }
+    //
+    if (llvm::Instruction::classof(var_i->getIrValue())) {
+      LOG(INFO, *(var_i->getIrValue()));
+      os << writeSimpleInstruction(static_cast<Instruction*>(var_i->getIrValue()));
+    }
   }  
-  */
+  
   return os;
 };
 
-String VerilogGenerator::writeOneInstruction(const llvm::Instruction* I)
+String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
 {
-  String executor;
-  /*
-  std::list<ControlStep> &statelist = scheduler->m_ctrlSteps;
-  std::map<const llvm::Value*, ValueLifeInfo> &info = scheduler->valueInfoMap;
+  String instantiate;
+  std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   char buf[256];
   unsigned size = 0;
-  String state = makeHdlStateName(s.getbbName(), s.getId());
+  HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
   
   if (I->isBinaryOp()) {    
-    size = sprintf(buf,"binary_unit #(\n");
-    executor += String(buf, size);     
-    size = sprintf(buf,".BITWIDTH (%d),\n", I->getOperand(0)->getType()->getIntegerBitWidth());
-    executor += String(buf, size); 
-    size = sprintf(buf,".OPCODE  (\"%s\"))\n", I->getOpcodeName());
-    executor += String(buf, size); 
+    size = sprintf(buf,"binary_unit #( ");
+    instantiate += String(buf, size);     
+    size = sprintf(buf,"%d, ", I->getOperand(0)->getType()->getIntegerBitWidth());
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"\"%s\" )", I->getOpcodeName());
+    instantiate += String(buf, size); 
   } else {  
     size = sprintf(buf,"%s_unit ", I->getOpcodeName());
-    executor += String(buf, size);
+    instantiate += String(buf, size);
     //size = sprintf(buf,"#(.BITWIDTH (%d))n", I->getType()->getIntegerBitWidth());
-    //executor += String(buf, size); 
+    //instantiate += String(buf, size); 
   }  
-  size = sprintf(buf,"I%lx(\n", reinterpret_cast<uintptr_t>(I));
-  executor += String(buf, size);
+  size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(I));
+  instantiate += String(buf, size);
+  size = sprintf(buf,"func_clk, ");
+  instantiate += String(buf, size);   
+  size = sprintf(buf,"%s, ", state.getName().data());
+  instantiate += String(buf, size);
+  
+  String tag = "_" + std::to_string(state.id);
   for(const llvm::Use &use : I->operands())
     { 
-      size = sprintf(buf,".operand[%d] (%20s),\n", use.getOperandNo(), (*use).getName().data());
-      executor += String(buf, size); 
+      size = sprintf(buf,"%s%s, ", (*use).getName().data(), &tag[0]);
+      instantiate += String(buf, size); 
     }
-  size = sprintf(buf,".%-10s (%20s),\n","enable", &state[0]);
-  executor += String(buf, size);
-  size = sprintf(buf,".%-10s (%20s),\n","clk", "func_clk");
-  executor += String(buf, size);   
-  size = sprintf(buf,".%-10s (%20s));\n\n","result", I->getName().data());  
-  executor += String(buf, size);   
-  */
-  return executor;  
+
+  size = sprintf(buf,"%s%s );\n", I->getName().data(), &tag[0]);  
+  instantiate += String(buf, size);   
+  
+  return instantiate;  
 };

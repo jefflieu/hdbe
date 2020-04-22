@@ -48,7 +48,7 @@ class VerilogGenerator : public CodeGenerator {
     std::ostream& writeStateSquence(std::ostream& os);        
     std::ostream& writeInstructions(std::ostream& os);
     std::string writeHdlObjDeclaration(HdlObject& obj, String tag);
-    std::string writeOneInstruction(const llvm::Instruction* I);
+    std::string writeSimpleInstruction(llvm::Instruction* I);
 };
 
 }

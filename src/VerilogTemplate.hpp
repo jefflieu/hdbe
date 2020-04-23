@@ -34,3 +34,6 @@ end \n"
 
 #define VERILOG_PORTMAP(portstr, varstr)  std::to_string("." + portstr + " ( " + varstr + ")")
 #define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))
+
+#define VERILOG_ASSIGN_STATEMENT " assign "
+#define VERILOG_CONT_ASSIGN " = "

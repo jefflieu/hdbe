@@ -1,4 +1,5 @@
 #include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Type.h"
 #include "llvm/Support/raw_ostream.h"
 
 #include "logging/logger.hpp"
@@ -22,7 +23,9 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   auto &variableList  = CDI_h->variableList; 
   auto &memOpsList    = CDI_h->memOpsList; 
   
+
   //Iterate over argument 
+
   for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(); I != E; ++I)
   {
     LOG_S(DA_DBG) << "Argument " << *I << "\n";     
@@ -34,6 +37,12 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
     var.property        = analyzeValue(&*I);
     var.property.stype  = HdlSignalType::regType;   
   }
+
+  //Function is a special output port 
+  portList.push_back(HdlPort(reinterpret_cast<llvm::Value*>(F)));                                       
+  HdlPort &output = portList.back();
+  output.property = analyzeValue(reinterpret_cast<llvm::Value*>(F));
+  output.name     = "func_ret";  
 
   for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
     //Filter out memory related operations 
@@ -59,7 +68,19 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
 HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
 { 
   HdlProperty property;
-  switch(value->getType()->getTypeID()) 
+  llvm::Type *type_h = value->getType();
+  //Special handling of a function 
+  if (Function::classof(value)) {
+    type_h = static_cast<Function*>(value)->getReturnType();
+    property.stype = HdlSignalType::outputType;
+    if (type_h->getTypeID() == llvm::Type::IntegerTyID)
+      property.bitwidth = type_h->getIntegerBitWidth();  
+    else 
+      property.bitwidth  = 1;
+    return property;
+  }
+   
+  switch(type_h->getTypeID()) 
     {
       case llvm::Type::IntegerTyID :  { 
                                         property.vtype = HdlVectorType::scalarType;
@@ -68,7 +89,7 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                           We currently only support input
                                         */
                                         if (Argument::classof(value))
-                                          property.stype = HdlSignalType::inputType;
+                                          property.stype = HdlSignalType::inputType;                                   
                                         else 
                                           property.stype = HdlSignalType::regType;
                                         

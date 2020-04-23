@@ -20,6 +20,7 @@ class HdlObject;
 class HdlPort;
 
 using String = std::string;
+using Ostream  = std::ostream;
 
 class CodeGenerator {  
   
@@ -47,8 +48,11 @@ class VerilogGenerator : public CodeGenerator {
     std::ostream& writeSignalDeclaration(std::ostream& os);    
     std::ostream& writeStateSquence(std::ostream& os);        
     std::ostream& writeInstructions(std::ostream& os);
-    std::string writeHdlObjDeclaration(HdlObject& obj, String tag);
-    std::string writeSimpleInstruction(llvm::Instruction* I);
+    String writeHdlObjDeclaration(HdlObject& obj, String tag);
+    String writeSimpleInstruction(llvm::Instruction* I);
+    Ostream& writeRegisterStages(Ostream& os);
+    Ostream& writeInputAssignment(Ostream& os);
+    Ostream& writeReturnStatement(Ostream& os);
 };
 
 }

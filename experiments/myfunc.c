@@ -169,6 +169,11 @@ int assortedArg(int * pointer, int scalar, SHIFT_REG structure, Array8_t array, 
   return complex_struct.start + complex_struct.end;
 }
 
+void returnVoid(int * a, int *b)
+{
+  b[0] = a[0];
+}
+
 int main(void)
 {
   int array[10];

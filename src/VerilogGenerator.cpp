@@ -20,6 +20,10 @@ void VerilogGenerator::write()
   writeStateSquence(os);
   
   writeInstructions(os);
+  
+  writeInputAssignment(os);
+  writeRegisterStages(os);
+  writeReturnStatement(os);
 
   os << VERILOG_DECL_MODULE_END("NONE");    
   os.close();  
@@ -89,7 +93,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   String declare;
   String assign;
   String ret_state;
-
+  
   os << " // State sequence " << "\n\n";  
   
   for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
@@ -98,7 +102,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
     declare += VERILOG_VAR_DECL(bit, state.getName().str()) + ";\n";                  
     if (state.isBranch()) {
       if (state.isReturn()) {
-        ret_state = state.getName();
+        
       }
     } else {
       String next_state = makeHdlStateName( String(state.getbbName()), state.id + 1);
@@ -107,10 +111,9 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   }
 
   os << declare;
-  os << "state_entry0 <= func_start" << VERILOG_ENDL;
+  os << "assign state_entry0 = func_start" << VERILOG_ENDL;
   os << VERILOG_CLKPROCESS_TOP(state_process);
   os << assign;
-  os << "func_done <= " + ret_state + VERILOG_ENDL;
   os << VERILOG_CLKPROCESS_BOTTOM(state_process);
   
   return os;
@@ -173,3 +176,69 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   
   return instantiate;  
 };
+
+Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
+{
+  String assign;
+  std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
+  std::list<HdlVariable>& variableList       = CDI_h->variableList;
+  for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
+  {    
+    int birthCycle = floor(VIM[var_i->getIrValue()].birthTime.time);
+    int useCycle   = floor(VIM[var_i->getIrValue()].useTimeList.back().time);
+    for(int i = birthCycle + 1; i <= useCycle; ++i)
+    {
+        String tag1 = "_" + std::to_string(i);
+        String tag0 = "_" + std::to_string(i-1);
+        assign += var_i->name + tag1 + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
+      
+    }
+  } 
+  os << VERILOG_CLKPROCESS_TOP(state_process);
+  os << assign;
+  os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+  return os;
+}
+
+Ostream& VerilogGenerator::writeInputAssignment(Ostream& os)
+{
+  String assign;
+  std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
+  std::list<HdlPort>& portList       = CDI_h->portList;
+  for(auto var_i = portList.begin(), var_last = portList.end(); var_i != var_last; ++var_i)
+  {    
+    if (var_i->property.stype != HdlSignalType::inputType) continue;
+    String tag0 = "_0";
+    assign += VERILOG_ASSIGN_STATEMENT + var_i->name + tag0 + VERILOG_CONT_ASSIGN + var_i->name + VERILOG_ENDL;
+  } 
+  os << assign;
+  return os;
+}
+
+Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
+{
+  auto &stateList = CDI_h->stateList;
+  String assign;
+  os << " // Return handling " << "\n\n";  
+  
+  for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
+  {    
+    HdlState & state = *state_i;
+    if (state.isBranch()) {
+      if (state.isReturn()) {
+        String tag = "_" + std::to_string(state.id);
+        assign += "if (" + state.getName().str() + ")\n";
+        assign += "begin\n";
+        assign += "func_done <= 1'b1;\n";
+        if (state.termInstruction->getNumOperands() > 0)
+          assign += "func_ret  <= " + state.termInstruction->getOperand(0)->getName().str() + tag + VERILOG_ENDL;
+        assign += "end\n"; 
+      }
+    }
+  }
+
+  os << VERILOG_CLKPROCESS_TOP(state_process);
+  os << "func_done <= 1'b0;\n";
+  os << assign;
+  os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+}

@@ -174,7 +174,7 @@ void returnVoid(int * a, int *b)
   b[0] = a[0];
 }
 
-int main(void)
+int __main(void)
 {
   int array[10];
   return pointers(array, 10, 0x1234);  

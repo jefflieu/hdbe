@@ -126,7 +126,7 @@ void InstructionScheduler::schedule(Function * irFunction)
                   
           
           //Ok to be schedule 
-          if (valid_time <= (step + 1.0)) {
+          if (valid_time < (step + 1.0) || latency >= 1.0) {
             
             if (I->isTerminator())
               state.termInstruction = I;

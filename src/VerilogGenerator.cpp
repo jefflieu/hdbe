@@ -145,11 +145,11 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
   
   if (I->isBinaryOp()) {    
-    size = sprintf(buf,"binary_unit #( ");
+    size = sprintf(buf,"BinaryOp #( ");
     instantiate += String(buf, size);     
-    size = sprintf(buf,"%d, ", I->getOperand(0)->getType()->getIntegerBitWidth());
+    size = sprintf(buf,"\"%s\",", I->getOpcodeName());
     instantiate += String(buf, size); 
-    size = sprintf(buf,"\"%s\" )", I->getOpcodeName());
+    size = sprintf(buf,"%d)", I->getOperand(0)->getType()->getIntegerBitWidth());
     instantiate += String(buf, size); 
   } else {  
     size = sprintf(buf,"%s_unit ", I->getOpcodeName());
@@ -194,9 +194,9 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
       
     }
   } 
-  os << VERILOG_CLKPROCESS_TOP(state_process);
+  os << VERILOG_CLKPROCESS_TOP(register_stage);
   os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+  os << VERILOG_CLKPROCESS_BOTTOM(register_stage);
   return os;
 }
 
@@ -237,8 +237,8 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
     }
   }
 
-  os << VERILOG_CLKPROCESS_TOP(state_process);
+  os << VERILOG_CLKPROCESS_TOP(return_handling);
   os << "func_done <= 1'b0;\n";
   os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+  os << VERILOG_CLKPROCESS_BOTTOM(return_handling);
 }

@@ -25,6 +25,8 @@ void VerilogGenerator::write()
   writeRegisterStages(os);
   writeReturnStatement(os);
 
+  writeVCDLogging(os);
+
   os << VERILOG_DECL_MODULE_END("NONE");    
   os.close();  
 };
@@ -241,4 +243,21 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
   os << "func_done <= 1'b0;\n";
   os << assign;
   os << VERILOG_CLKPROCESS_BOTTOM(return_handling);
+}
+
+
+Ostream& VerilogGenerator::writeVCDLogging(Ostream& os)
+{
+// Print some stuff as an example
+  String str = String(
+"\n\n\
+initial begin \n\
+  if ($test$plusargs(\"trace\") != 0) begin \n\
+    $display(\"[%0t] Tracing to logs/vlt_dump.vcd...\", $time); \n\
+    $dumpfile(\"logs/vlt_dump.vcd\"); \n\
+    $dumpvars(); \n\
+  end \n\
+  $display(\"[%0t] Model running...\", $time);\n\
+end\n\n");
+  return os  << str;
 }

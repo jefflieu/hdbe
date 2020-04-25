@@ -53,6 +53,7 @@ class VerilogGenerator : public CodeGenerator {
     Ostream& writeRegisterStages(Ostream& os);
     Ostream& writeInputAssignment(Ostream& os);
     Ostream& writeReturnStatement(Ostream& os);
+    Ostream& writeVCDLogging(Ostream& os);
 };
 
 }

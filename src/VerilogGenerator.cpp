@@ -2,6 +2,7 @@
 #include "CodeGenerator.hpp"
 #include "VerilogTemplate.hpp"
 #include "logging/logger.hpp"
+#include "IRUtil.hpp"
 
 using namespace hdbe;
 
@@ -24,7 +25,7 @@ void VerilogGenerator::write()
   writeInputAssignment(os);
   writeRegisterStages(os);
   writeReturnStatement(os);
-
+  writeArrayObject(os);
   writeVCDLogging(os);
 
   os << VERILOG_DECL_MODULE_END("NONE");    
@@ -57,17 +58,26 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
 {  
   auto &variableList = CDI_h->variableList;
   auto &VIM          = CDI_h->valueInfoMap;
+  auto &memObjList   = CDI_h->memObjList;
   for(auto I = variableList.begin(), E = variableList.end(); I!=E; ++I)
   {
     HdlVariable &var = *I;
     //for each signal, get live time 
     int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
     int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
+    LOG_S(0) << *(var.getIrValue()) << "\n";
     for(uint32_t i = birthTime; i <= liveTime; i++)
       {
         String tag = "_" + std::to_string(i);
         os << writeHdlObjDeclaration(var, tag) + ";\n";
       }
+  }
+
+  for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
+  {
+    HdlMemory &var = *I;
+    //for each signal, get live time
+    os << writeHdlObjDeclaration(var, "") + ";\n";      
   }
 }
 
@@ -131,7 +141,11 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
     //
     if (llvm::Instruction::classof(var_i->getIrValue())) {
       LOG(INFO, *(var_i->getIrValue()));
-      os << writeSimpleInstruction(static_cast<Instruction*>(var_i->getIrValue()));
+      auto instr = static_cast<Instruction*>(var_i->getIrValue());
+      if (isMemoryInstruction(instr)) {
+      } else {
+      os << writeSimpleInstruction(instr);      
+      }
     }
   }  
   
@@ -145,7 +159,6 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
-  
   if (I->isBinaryOp()) {    
     size = sprintf(buf,"BinaryOp #( ");
     instantiate += String(buf, size);     
@@ -175,7 +188,6 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
 
   size = sprintf(buf,"%s%s );\n", I->getName().data(), &tag[0]);  
   instantiate += String(buf, size);   
-  
   return instantiate;  
 };
 
@@ -260,4 +272,45 @@ initial begin \n\
   $display(\"[%0t] Model running...\", $time);\n\
 end\n\n");
   return os  << str;
+}
+
+Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
+  
+  auto &variableList = CDI_h->variableList;
+  auto &VIM          = CDI_h->valueInfoMap;
+  auto &memObjList   = CDI_h->memObjList;
+  String assign;
+  for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
+  {
+    HdlMemory &memObj = *I;
+    //Writing Load 
+    for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
+    {
+       if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
+         int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
+         String tag0 = "_" + std::to_string(birthCycle);
+         int idx = computeIndex(*instr_i, memObj.getIrValue());
+         assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+       }
+    }   
+    //Writing Store 
+    os << assign;
+    assign = String();
+    
+    for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
+    {
+       if ((*instr_i)->getOpcode() == llvm::Instruction::Store){
+         HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+         String tag0 = "_" + std::to_string(state->id);
+         int idx = computeIndex(*instr_i, memObj.getIrValue());
+         Value* val = (*instr_i)->getOperand(0);
+         assign += "if (" + state->name + ")";
+         assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
+       }
+    }
+    os << VERILOG_CLKPROCESS_TOP(store_instruction_handling);
+    os << assign;
+    os << VERILOG_CLKPROCESS_BOTTOM(store_instruction_handling);
+  }
+  return os;
 }

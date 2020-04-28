@@ -16,14 +16,24 @@ using Function = llvm::Function;
 using Instruction = llvm::Instruction;
 using llvm::outs;
 using StringRef = llvm::StringRef;
-using string = std::string;
+using String = std::string;
 
 void IRPreprocessor::transformNames()
 {
-  for (llvm::inst_iterator I = inst_begin(irFunction), E = inst_end(irFunction); I != E; ++I)
+  for (Module::global_iterator I = irModule->global_begin(), E = irModule->global_end(); I != E; ++I)
   {
-    string newName = makeHdlName(I->getName().str());
+    String newName = makeHdlName(I->getName().str());
     I->setName(newName);
     LOG_S(IR_PP_DBG) << I->getName() << "\n";
+  }
+  for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
+  {
+    for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
+    {
+      if (I->getType()->isVoidTy()) continue;
+      String newName = makeHdlName(I->getName().str());
+      I->setName(newName);
+      LOG_S(IR_PP_DBG) << I->getName() << "\n";
+    }
   }
 }

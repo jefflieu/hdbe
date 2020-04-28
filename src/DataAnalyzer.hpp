@@ -24,6 +24,15 @@ class DataAnalyzer {
       }
     return false;
   }
+
+  template<typename T> 
+  T& find(std::list<T>& v, llvm::Value* val){
+    for(auto I = v.begin(), E = v.end(); I!=E; ++I)
+      {
+        if ((*I).getIrValue()  == val) return *I;
+      }
+    return *v.end();
+  }
  
   private: 
     ControlDataInfo *CDI_h;
@@ -35,6 +44,7 @@ class DataAnalyzer {
     void analyze() {analyze(CDI_h->irModule, CDI_h->irFunction);}
     HdlProperty analyzePointer(llvm::Value* valuePointerTy);
     HdlProperty analyzeValue(llvm::Value* value);
+    static Value* analyzeMemoryOp(Instruction * memOp, int* index);
 };
 
 }

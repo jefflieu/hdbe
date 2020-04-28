@@ -112,6 +112,26 @@ int fir(SHIFT_REG a, SHIFT_REG b)
   return tmp;
 }
 
+int vector_sum(int a[LENGTH])
+{
+  int tmp = 0;
+  for(unsigned i = 0 ; i < LENGTH; i ++ )
+  {
+    tmp += a[i];
+  }
+  return tmp;
+}
+
+int vector_sum2(int a[LENGTH])
+{
+  int tmp = 0;
+  for(unsigned i = 0 ; i < LENGTH; i+=2 )
+  {
+    tmp += (a[i] + a[i+1]);
+  }
+  return tmp;
+}
+
 int fir1(int a[LENGTH], const int b[LENGTH])
 {
   int tmp = 0;

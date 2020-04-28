@@ -1,5 +1,7 @@
 #pragma once 
+#include <list>
 
+#include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
 #include "llvm/ADT/StringExtras.h"
 
@@ -8,6 +10,9 @@ namespace hdbe {
 
 using String = std::string;
 using Value  = llvm::Value;
+using Instruction = llvm::Instruction;
+using String = std::string;
+using InstrucionList = std::list<Instruction*>;
 
 enum class HdlVectorType {scalarType, arrayType, memoryType};
 enum class HdlSignalType {combType, regType, inputType, outputType};
@@ -61,6 +66,16 @@ class HdlVariable : public HdlObject {
     HdlVariable(String name) : HdlObject(name) {};
     HdlVariable(Value* _irVal) : HdlObject(_irVal) {};
     ~HdlVariable() {};
+ 
+};
+
+class HdlMemory : public HdlObject {
+  
+  public: 
+    HdlMemory(String name) : HdlObject(name) {};
+    HdlMemory(Value* _irVal) : HdlObject(_irVal) {};
+    ~HdlMemory() {};
+    InstrucionList memInstrList;
  
 };
 

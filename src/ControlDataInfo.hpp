@@ -32,7 +32,7 @@ class ControlDataInfo {
   
     std::list<HdlPort     > portList;
     std::list<HdlVariable > variableList;
-    std::list<HdlVariable > memOpsList;
+    std::list<HdlMemory   > memObjList;
     std::list<HdlState    > stateList;    
     std::map<Value*, ValueLifeInfo> valueInfoMap;
 

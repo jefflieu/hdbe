@@ -18,6 +18,8 @@ double sc_time_stamp() {
 }
 
 extern "C" int MultiplyAccumulate8(int, int, int, int, int, int, int, int);
+extern "C" int Accumulate2(int, int);
+extern "C" int Accumulate(int);
 
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
@@ -50,25 +52,25 @@ int main(int argc, char** argv, char** env) {
     
     top->func_clk = 0;
     top->func_start = 0;
-    top->a = 1;
-    top->b = 2;
-    top->c = 3;
-    top->d = 4;
-    top->e = 5;
-    top->f = 6;
-    top->g = 7;
-    top->h = 8;
+    top->in = 2;
+    top->rst = 0;
 
-    int ref = MultiplyAccumulate8(top->a, top->b, top->c, top->d, top->e, top->f, top->g, top->h);
-    VL_PRINTF("Expected value %d\n", ref);
+    const int kSAMPLES = 10;
+    int ref[kSAMPLES];
+    int ret[kSAMPLES];
+    int sample;
+    for(int sample = 0; sample< kSAMPLES; sample++)
+      ref[sample] = Accumulate2(top->in, (sample==0));
+    //VL_PRINTF("Expected value %d\n", ref);
 
     // Simulate until $finish
+    sample = 0;
     //while (!Verilated::gotFinish()) {
-    while (!top->func_done) {
+    while (! (top->func_done and sample == kSAMPLES) ) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
-        top->func_clk = !top->func_clk;
+        top->func_clk = main_time & 0x1;
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled; in this example we do
@@ -77,9 +79,10 @@ int main(int argc, char** argv, char** env) {
         if (!top->func_clk) {
             if (main_time == 4) {
                 top->func_start = 1;  // Assert reset
+                top->rst = 1;  // Assert reset
             } else {
-                top->func_start = 0;  // Deassert reset
-            }
+              top->rst = 0;
+            } 
         }
 
         // Evaluate model
@@ -88,11 +91,17 @@ int main(int argc, char** argv, char** env) {
         // eval_end_step() on each.)
         top->eval();
 
+        if (top->func_done && top->func_clk) {
+          ret[sample] = top->func_ret;
+          sample++;
+        }
+
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x rstl=%x func_done = %x func_ret = %d \n",
                   main_time, top->func_clk, top->func_start, top->func_done, top->func_ret);
     }
-    if (top->func_ret == ref) VL_PRINTF("PASSED\n"); else VL_PRINTF("FAILED\n");
+    for(sample = 0; sample < kSAMPLES; sample++)
+      if (ret[sample] == ref[sample]) VL_PRINTF("PASSED\n"); else VL_PRINTF("FAILED\n");
     // Final model cleanup
     top->final();
 

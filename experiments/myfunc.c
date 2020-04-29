@@ -11,7 +11,7 @@ int Accumulate2(int in, _Bool rst) {
   if (!rst) {
     reg = reg + in;    
   } else {
-    reg = 0;    
+    reg = 10;    
   }
   return reg;
 }

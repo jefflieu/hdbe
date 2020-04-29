@@ -25,13 +25,14 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   auto &variableList  = CDI_h->variableList; 
   auto &memObjList    = CDI_h->memObjList; 
   
-
+  LOG_S(DA_DBG) << " analyzing \n";     
+    
   //Iterate over argument 
   //For each argument, we generate 2 HdlObjects: 
   //1 HdlPort and and 1 HdlVariable. 
   for (Function::arg_iterator I = F->arg_begin(), E = F->arg_end(); I != E; ++I)
   {
-    LOG_S(DA_DBG) << "Argument " << *I << "\n";     
+    LOG_S(DA_DBG + 1) << "Argument " << *I << "\n";     
     portList.push_back(HdlPort((llvm::Value*)&*I));                                       
     HdlPort &port       = portList.back();
     port.property       = analyzeValue(&*I);
@@ -60,9 +61,9 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
         HdlMemory   &memObj = memObjList.back();
         memObj.property     = analyzePointer(val);
         memObj.memInstrList.push_back(&*I);
-        LOG_S(DA_DBG + 1) << val << " : " << *val << "\n";    
+        LOG_S(DA_DBG+1) << val << " : " << *val << "\n";    
       } else {
-        LOG_S(DA_DBG + 1) << val << " : " << *val << " already in the list\n";
+        LOG_S(DA_DBG+1) << val << " : " << *val << " already in the list\n";
         HdlMemory  &memObj = find(memObjList, val); 
         memObj.memInstrList.push_back(&*I);
       }
@@ -95,6 +96,8 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
 { 
   HdlProperty property;
   llvm::Type *type_h = value->getType();
+  LOG_S(DA_DBG + 1) << "Value analysis \n";
+  LOG_S(DA_DBG + 1) << *value << "(" << value << ")\n";
   //Special handling of a function 
   if (Function::classof(value)) {
     type_h = static_cast<Function*>(value)->getReturnType();
@@ -121,6 +124,8 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                         
                                         property.bitwidth = value->getType()->getIntegerBitWidth();      
                                         property.isConstant = ConstantInt::classof(value);
+                                        if (property.isConstant)
+                                          property.dflt = (static_cast<llvm::ConstantInt*>(value))->getSExtValue();
                                         break; 
                                       }
       case llvm::Type::PointerTyID :  {
@@ -131,13 +136,17 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
         LOG_S(ERROR) << "Not supported type at the port" << "\n";
         break;
     }
-  
+  LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
+  LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
+  LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
+  LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 }
 
 HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
 {
-  LOG_S(DA_DBG) << "Pointer analysis: " << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
+  LOG_S(DA_DBG+1) << "Pointer analysis: \n"; 
+  LOG_S(DA_DBG+1) << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
   bool staticIndex = true;
   int maxIdx = 0;
   const DataLayout & DL = CDI_h->irModule->getDataLayout();
@@ -155,7 +164,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
         case llvm::Instruction::GetElementPtr : /*  
                                                     Check the Get element is static, then we may promote it to registers 
                                                  */
-                                                LOG_S(DA_DBG) << "TypeID: " << I->getType()->getTypeID() << "\n";
+                                                LOG_S(DA_DBG + 2) << "TypeID: " << I->getType()->getTypeID() << "\n";
                                                 for(llvm::Use &use : U->operands())
                                                 {
                                                   llvm::Value* val = use.get();                                      
@@ -198,10 +207,10 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
     property.arraylength = DL.getPointerSizeInBits();  
   }
   
-  LOG_S(DA_DBG) << " isConstant  : " << property.isConstant << "\n";
-  LOG_S(DA_DBG) << " bitwidth    : " << property.bitwidth << "\n";
-  LOG_S(DA_DBG) << " arraylength : " << property.arraylength << "\n";
-  LOG_S(DA_DBG) << " end analysis \n";
+  LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
+  LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
+  LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
+  LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 } 
 
@@ -211,7 +220,7 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
   bool staticIndex = false;
   Value * basePtr = nullptr;
   Value * idxPtr  = nullptr;
-  LOG_S(DA_DBG) << "Analyzing memory ops" << *memOp << "\n";
+  LOG_S(DA_DBG + 1) << "Analyzing memory ops" << *memOp << "\n";
   switch(memOp->getOpcode())
       {
         case llvm::Instruction::GetElementPtr : basePtr = memOp->getOperand(0);
@@ -239,7 +248,7 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
       }
   if (Instruction::classof(basePtr)) 
     basePtr = analyzeMemoryOp(static_cast<Instruction*>(basePtr), index);
-   LOG_S(DA_DBG) << "done\n";
+   LOG_S(DA_DBG + 1) << "done\n";
   return basePtr;
 }
 

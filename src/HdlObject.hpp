@@ -3,8 +3,8 @@
 
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
-#include "llvm/ADT/StringExtras.h"
 
+#include "HDLUtil.hpp"
 
 namespace hdbe {
 
@@ -23,6 +23,7 @@ struct HdlProperty {
   int  bitwidth = 0;
   int  arraylength = 0;
   bool isConstant = false;
+  int64_t dflt = 0;
 };
 
 
@@ -38,10 +39,7 @@ class HdlObject {
     HdlObject() { name = "noname";}
     HdlObject(String name) : name(name) {}
     HdlObject(Value* _irVal) : irValue(_irVal) {
-      if (irValue->hasName())
-        name = irValue->getName().str();
-      else 
-        name = "unnamed_" + llvm::utohexstr(reinterpret_cast<uintptr_t>(irValue));
+      name = getValueHdlName(irValue);
     }
     
     Value* getIrValue() {return irValue;}

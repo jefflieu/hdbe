@@ -39,12 +39,14 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
     decl = (obj.property.stype == HdlSignalType::inputType)?"input ":(
               (obj.property.stype == HdlSignalType::outputType)?"output ":"  "
             );
+    String dflt;
     switch (obj.property.vtype)
     {
-      case HdlVectorType::scalarType : if (obj.property.bitwidth > 1) 
-                                         decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, (obj.name + tag));
+      case HdlVectorType::scalarType : if (obj.property.isConstant) dflt += " = " + std::to_string(obj.property.dflt);
+                                       if (obj.property.bitwidth > 1) 
+                                         decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, (obj.name + tag + dflt));
                                        else 
-                                         decl += VERILOG_VAR_DECL(bit, (obj.name + tag));
+                                         decl += VERILOG_VAR_DECL(bit, (obj.name + tag + dflt));
                                        break;
       case HdlVectorType::memoryType : decl += "--Memory port" ; break;
       case HdlVectorType::arrayType  : decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name + tag + "[" + std::to_string(obj.property.arraylength-1) + ":0]";
@@ -159,16 +161,27 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
-  if (I->isBinaryOp()) {    
+  if (llvm::BinaryOperator::classof(I)) {    
     size = sprintf(buf,"BinaryOp #( ");
     instantiate += String(buf, size);     
     size = sprintf(buf,"\"%s\",", I->getOpcodeName());
     instantiate += String(buf, size); 
     size = sprintf(buf,"%d)", I->getOperand(0)->getType()->getIntegerBitWidth());
     instantiate += String(buf, size); 
-  } else {  
-    size = sprintf(buf,"%s_unit ", I->getOpcodeName());
+  } else if (llvm::CmpInst::classof(I)) {
+    size = sprintf(buf,"%sOp #(", I->getOpcodeName());
     instantiate += String(buf, size);
+    size = sprintf(buf,"\"%s\",", llvm::CmpInst::getPredicateName( (static_cast<llvm::CmpInst*>(I))->getPredicate()  ).data());
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%d)", I->getType()->getIntegerBitWidth());
+    instantiate += String(buf, size);
+  } else {  
+    size = sprintf(buf,"%sOp #(", I->getOpcodeName());
+    instantiate += String(buf, size);
+    size = sprintf(buf,"\"%s\",", I->getOpcodeName());
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%d)", I->getType()->getIntegerBitWidth());
+    instantiate += String(buf, size); 
     //size = sprintf(buf,"#(.BITWIDTH (%d))n", I->getType()->getIntegerBitWidth());
     //instantiate += String(buf, size); 
   }  
@@ -182,7 +195,8 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   String tag = "_" + std::to_string(state.id);
   for(const llvm::Use &use : I->operands())
     { 
-      size = sprintf(buf,"%s%s, ", (*use).getName().data(), &tag[0]);
+      //size = sprintf(buf,"%s%s, ", (*use).getName().data(), &tag[0]);
+      size = sprintf(buf,"%s%s, ", getValueHdlName(use.get()).data(), &tag[0]);
       instantiate += String(buf, size); 
     }
 
@@ -198,6 +212,7 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
   std::list<HdlVariable>& variableList       = CDI_h->variableList;
   for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
   {    
+    if (var_i->property.isConstant) continue;
     int birthCycle = floor(VIM[var_i->getIrValue()].birthTime.time);
     int useCycle   = floor(VIM[var_i->getIrValue()].useTimeList.back().time);
     for(int i = birthCycle + 1; i <= useCycle; ++i)

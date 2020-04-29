@@ -30,10 +30,11 @@ void IRPreprocessor::transformNames()
   {
     for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
     {
+      //Transformname of use 
       if (I->getType()->isVoidTy()) continue;
-      String newName = makeHdlName(I->getName().str());
-      I->setName(newName);
+      I->setName(makeHdlName(I->getName().str()));
       LOG_S(IR_PP_DBG) << I->getName() << "\n";
+      
     }
   }
 }

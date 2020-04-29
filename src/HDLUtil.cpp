@@ -24,3 +24,13 @@ std::string hdbe::makeHdlName(std::string name) {
 std::string hdbe::makeHdlStateName(std::string bbName, int id) {
   return makeHdlName("state_" + bbName + std::to_string(id));
 }
+
+std::string hdbe::getValueHdlName(Value *val)
+{
+  if (val->hasName())
+    return val->getName().str();
+  else if (llvm::ConstantInt::classof(val))
+    return String("k" + llvm::utostr(static_cast<llvm::ConstantInt*>(val)->getSExtValue()));
+  else
+    return String("s" + llvm::utohexstr(reinterpret_cast<uintptr_t>(val)));  
+}

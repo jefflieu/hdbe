@@ -69,18 +69,17 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
       }
 
      }
-    else
 
-      for(llvm::Use &use : I->operands()) {
-        llvm::Value* val = use.get();      
-        if (! isIn(variableList, val) && ! isIn(portList, val) && ! isIn(memObjList, val)) {
-          variableList.push_back(HdlVariable((llvm::Value*)val));
-          HdlVariable &var = variableList.back();
-          var.property = analyzeValue(val);
-          LOG_S(DA_DBG + 1) << val << " : " << *val << "\n";        
-        } else 
-          LOG_S(DA_DBG + 1) << val << " : " << *val << " already in the list\n";      
-      }
+    for(llvm::Use &use : I->operands()) {
+      llvm::Value* val = use.get();      
+      if (! isIn(variableList, val) && ! isIn(portList, val) && ! isIn(memObjList, val)) {
+        variableList.push_back(HdlVariable((llvm::Value*)val));
+        HdlVariable &var = variableList.back();
+        var.property = analyzeValue(val);
+        LOG_S(DA_DBG + 1) << val << " : " << *val << "\n";        
+      } else 
+        LOG_S(DA_DBG + 1) << val << " : " << *val << " already in the list\n";      
+    }
   }
 
   /*LOG(DA_DBG, "memory operations");

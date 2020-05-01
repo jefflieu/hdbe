@@ -12,7 +12,8 @@ using Instruction = llvm::Instruction;
 
 void VerilogGenerator::write() 
 {
-  String filename = "Test.sv";
+  auto F         = CDI_h->irFunction;
+  String filename = F->getName().str() + ".sv";
   std::ofstream os(filename, std::ofstream::out);  
   writePorts(os);
   
@@ -294,7 +295,8 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
   auto &variableList = CDI_h->variableList;
   auto &VIM          = CDI_h->valueInfoMap;
   auto &memObjList   = CDI_h->memObjList;
-  String assign;
+  String load_assign;
+  String store_assign;
   for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
   {
     HdlMemory &memObj = *I;
@@ -305,12 +307,9 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
          int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
          String tag0 = "_" + std::to_string(birthCycle);
          int idx = computeIndex(*instr_i, memObj.getIrValue());
-         assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+         load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
        }
     }   
-    //Writing Store 
-    os << assign;
-    assign = String();
     
     for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
     {
@@ -319,13 +318,16 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
          String tag0 = "_" + std::to_string(state->id);
          int idx = computeIndex(*instr_i, memObj.getIrValue());
          Value* val = (*instr_i)->getOperand(0);
-         assign += "if (" + state->name + ")";
-         assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
+         store_assign += "if (" + state->name + ")";
+         store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
        }
     }
-    os << VERILOG_CLKPROCESS_TOP(store_instruction_handling);
-    os << assign;
-    os << VERILOG_CLKPROCESS_BOTTOM(store_instruction_handling);
+    
   }
+
+  os << load_assign;
+  os << VERILOG_CLKPROCESS_TOP(store_handling);
+  os << store_assign;
+  os << VERILOG_CLKPROCESS_BOTTOM(store_handling);
   return os;
 }

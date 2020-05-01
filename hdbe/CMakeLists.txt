@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.3)
-project(ir_parser)
+project(hdbe)
 
 find_package(LLVM REQUIRED CONFIG)
 
@@ -22,15 +22,15 @@ add_definitions(${LLVM_DEFINITIONS})
 add_definitions(-DLOGURU_WITH_STREAMS=1)
 
 # Now build our tools
-add_executable(ir_parser ir_parser.cpp )
+add_executable(hdbe hdbe.cpp )
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
 llvm_map_components_to_libnames(llvm_libs support core irreader analysis passes)
 
 # Link against LLVM libraries
-target_link_libraries(ir_parser ${llvm_libs} )
-target_sources(ir_parser PUBLIC      
+target_link_libraries(hdbe ${llvm_libs} )
+target_sources(hdbe PUBLIC      
     ${hdlbe_src}/IRUtil.cpp
     ${hdlbe_src}/HDLUtil.cpp
     ${hdlbe_src}/logging/logger.cpp
@@ -40,4 +40,4 @@ target_sources(ir_parser PUBLIC
     ${hdlbe_src}/ValueLifeInfo.cpp
     ${hdlbe_src}/InstructionScheduler.cpp)
 
-set_property(TARGET ir_parser PROPERTY CXX_STANDARD 17)
+set_property(TARGET hdbe PROPERTY CXX_STANDARD 17)

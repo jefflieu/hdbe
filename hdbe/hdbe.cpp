@@ -1,4 +1,7 @@
-//Thanks to Eli Bendersky (eliben@gmail.com) for an initial file that sets up dependency to get me get started quickly
+/* Authors: 
+Eli Bendersky (eliben@gmail.com)
+Jeff Lieu (lieumychuong@gmail.com)
+*/
 #include <typeinfo> 
 
 #include "llvm/IR/Metadata.h"

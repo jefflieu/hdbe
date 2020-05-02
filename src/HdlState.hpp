@@ -9,7 +9,6 @@
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/BasicBlock.h"
 
-#include "HardwareDescription.hpp"
 #include "HdlObject.hpp"
 
 

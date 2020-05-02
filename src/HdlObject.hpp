@@ -15,7 +15,7 @@ using String = std::string;
 using InstrucionList = std::list<Instruction*>;
 
 enum class HdlVectorType {scalarType, arrayType, memoryType};
-enum class HdlSignalType {combType, regType, inputType, outputType};
+enum class HdlSignalType {combType, regType, inputType, outputType, inoutType};
 
 struct HdlProperty {
   HdlVectorType vtype = HdlVectorType::scalarType;

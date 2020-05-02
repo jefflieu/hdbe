@@ -15,21 +15,28 @@ void VerilogGenerator::write()
   auto F         = CDI_h->irFunction;
   String filename = F->getName().str() + ".sv";
   std::ofstream os(filename, std::ofstream::out);  
+  
+  os << VERILOG_DECL_MODULE(F->getName().str());
+
   writePorts(os);
   
   writeSignalDeclaration(os);
-
+  
+  writeInputAssignment(os);
+  
   writeStateSquence(os);
   
   writeInstructions(os);
   
-  writeInputAssignment(os);
   writeRegisterStages(os);
+  
   writeReturnStatement(os);
+  
   writeArrayObject(os);
+  
   writeVCDLogging(os);
 
-  os << VERILOG_DECL_MODULE_END("NONE");    
+  os << VERILOG_DECL_MODULE_END(F->getName().str());    
   os.close();  
 };
 
@@ -38,7 +45,7 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
 {   
     String decl("None");    
     decl = (obj.property.stype == HdlSignalType::inputType)?"input ":(
-              (obj.property.stype == HdlSignalType::outputType)?"output ":"  "
+              (obj.property.stype == HdlSignalType::outputType)?"output ":""
             );
     String dflt;
     switch (obj.property.vtype)
@@ -50,7 +57,7 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
                                          decl += VERILOG_VAR_DECL(bit, (obj.name + tag + dflt));
                                        break;
       case HdlVectorType::memoryType : decl += "--Memory port" ; break;
-      case HdlVectorType::arrayType  : decl += "bit [" + std::to_string(obj.property.bitwidth-1) + ":0] " + obj.name + tag + "[" + std::to_string(obj.property.arraylength-1) + ":0]";
+      case HdlVectorType::arrayType  : decl += VERILOG_ARR_DECL(bit, obj.property.bitwidth,  (obj.name + tag) , obj.property.arraylength);
       default : break;
     }
     
@@ -89,7 +96,6 @@ std::ostream& VerilogGenerator::writePorts(std::ostream& os){
   auto &portList = CDI_h->portList;
   auto F         = CDI_h->irFunction;
   
-  os << VERILOG_DECL_MODULE(F->getName().str());
     
   //Iterate over analyzer.m_portList;  
   for(auto I = portList.begin(), E = portList.end(); I!=E; ++I)
@@ -109,7 +115,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   String assign;
   String ret_state;
   
-  os << " // State sequence " << "\n\n";  
+  os << VERILOG_CODE_SECTION("State sequence");  
   
   for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
   {    
@@ -127,9 +133,9 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
 
   os << declare;
   os << "assign state_entry0 = func_start" << VERILOG_ENDL;
-  os << VERILOG_CLKPROCESS_TOP(state_process);
+  os << VERILOG_CLKPROCESS_TOP("state_process");
   os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(state_process);
+  os << VERILOG_CLKPROCESS_BOTTOM("state_process");
   
   return os;
 };
@@ -138,7 +144,8 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
   
   std::list<HdlVariable> &variableList = CDI_h->variableList;
   
-  os << " // Instructions " << "\n\n";  
+  os << VERILOG_CODE_SECTION("Instructions");
+
   for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
   {    
     //
@@ -211,6 +218,8 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
   String assign;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlVariable>& variableList       = CDI_h->variableList;
+
+  os << VERILOG_CODE_SECTION("Register stages for pipelining");
   for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
   {    
     if (var_i->property.isConstant) continue;
@@ -224,9 +233,9 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
       
     }
   } 
-  os << VERILOG_CLKPROCESS_TOP(register_stage);
+  os << VERILOG_CLKPROCESS_TOP("register_stage");
   os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(register_stage);
+  os << VERILOG_CLKPROCESS_BOTTOM("register_stage");
   return os;
 }
 
@@ -235,6 +244,8 @@ Ostream& VerilogGenerator::writeInputAssignment(Ostream& os)
   String assign;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlPort>& portList       = CDI_h->portList;
+
+  os <<VERILOG_CODE_SECTION("Copying inputs");
   for(auto var_i = portList.begin(), var_last = portList.end(); var_i != var_last; ++var_i)
   {    
     if (var_i->property.stype != HdlSignalType::inputType) continue;
@@ -249,8 +260,8 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
 {
   auto &stateList = CDI_h->stateList;
   String assign;
-  os << " // Return handling " << "\n\n";  
   
+  os << VERILOG_CODE_SECTION("Return handling");    
   for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
   {    
     HdlState & state = *state_i;
@@ -267,10 +278,10 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
     }
   }
 
-  os << VERILOG_CLKPROCESS_TOP(return_handling);
+  os << VERILOG_CLKPROCESS_TOP("return_handling");
   os << "func_done <= 1'b0;\n";
   os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(return_handling);
+  os << VERILOG_CLKPROCESS_BOTTOM("return_handling");
 }
 
 
@@ -297,37 +308,40 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
   auto &memObjList   = CDI_h->memObjList;
   String load_assign;
   String store_assign;
+
+  os << VERILOG_CODE_SECTION("Array and memory load/store");
   for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
   {
     HdlMemory &memObj = *I;
     //Writing Load 
     for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
     {
-       if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
-         int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
-         String tag0 = "_" + std::to_string(birthCycle);
-         int idx = computeIndex(*instr_i, memObj.getIrValue());
-         load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
-       }
+      if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
+        HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+        int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
+        String tag0 = "_" + std::to_string(birthCycle);
+        int idx = computeIndex(*instr_i, memObj.getIrValue());
+        load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+      }
     }   
     
     for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
     {
        if ((*instr_i)->getOpcode() == llvm::Instruction::Store){
-         HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-         String tag0 = "_" + std::to_string(state->id);
-         int idx = computeIndex(*instr_i, memObj.getIrValue());
-         Value* val = (*instr_i)->getOperand(0);
-         store_assign += "if (" + state->name + ")";
-         store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
+        HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+        String tag0 = "_" + std::to_string(state->id);
+        int idx = computeIndex(*instr_i, memObj.getIrValue());
+        Value* val = (*instr_i)->getOperand(0);
+        store_assign += "if (" + state->name + ")";
+        store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
        }
     }
     
   }
 
   os << load_assign;
-  os << VERILOG_CLKPROCESS_TOP(store_handling);
+  os << VERILOG_CLKPROCESS_TOP("store_handling");
   os << store_assign;
-  os << VERILOG_CLKPROCESS_BOTTOM(store_handling);
+  os << VERILOG_CLKPROCESS_BOTTOM("store_handling");
   return os;
 }

@@ -12,6 +12,7 @@
 #include "ValueLifeInfo.hpp"
 #include "HardwareDescription.hpp"
 
+
 namespace hdbe {
 
 using Module      = llvm::Module;
@@ -19,11 +20,13 @@ using Function    = llvm::Function;
 using Instruction = llvm::Instruction;
 using Value       = llvm::Value;
 
+
 class ControlDataInfo {
   
   friend class DataAnalyzer;
   friend class VerilogGenerator;
   friend class InstructionScheduler;
+  friend class HardwareDescription;
 
   protected: 
     Module   *irModule   = nullptr; 
@@ -39,7 +42,7 @@ class ControlDataInfo {
     HardwareDescription     HWD;
 
   public :
-    ControlDataInfo () {};     
+    ControlDataInfo () {HWD.setParent(this);};     
     ControlDataInfo (Module *_module, const char* functionName) : irModule(_module) 
       { 
         this->irFunction = irModule->getFunction(functionName);

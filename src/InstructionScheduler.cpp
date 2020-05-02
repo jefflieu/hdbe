@@ -157,7 +157,7 @@ void InstructionScheduler::schedule(Function * irFunction)
         }   
         step ++ ; 
         //For debugging
-        if (step > 10) return;
+        ASSERT(step < 20, "Something wrong in scheduling process") ;
     }
   }
 

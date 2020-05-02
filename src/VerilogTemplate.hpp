@@ -1,6 +1,6 @@
 
 #define VERILOG_ENDL ";\n"
-#define VERILOG_ASSIGN " <= "
+
 
 
 #define VERILOG_DECL_MODULE(__name) \
@@ -19,21 +19,28 @@ endmodule //" << __name << "\n\n"
 
 #define VERILOG_CLKPROCESS_TOP(__name) "\
 always@(posedge func_clk) \n\
-begin: " << #__name << "\n\n"
+begin //" << __name << "\n\n"
+
+#define VERILOG_RANGE(a, b) ("[" + std::to_string(a) + ":" + std::to_string(b) + "]")
 
 #define VERILOG_VAR_DECL(_type, name) (std::string(#_type" ") + name)
 
-#define VERILOG_VEC_DECL(_type, size, name) (std::string(#_type"  [") + std::to_string(size-1) + std::string(":0] ") + name)
+#define VERILOG_VEC_DECL(_type, size, name) (std::string(#_type" ") + VERILOG_RANGE(size-1,0) + name)
+
+#define VERILOG_ARR_DECL(_type, dim1, name, dim2) (std::string(#_type" ") + VERILOG_RANGE(dim1-1, 0) + name + VERILOG_RANGE(dim2-1, 0))
 
 #define VERILOG_STATEMENT(statement)  "\
   "<< statement << ";\n"
 
 
 #define VERILOG_CLKPROCESS_BOTTOM(__name) "\n\
-end \n"
+end //" << __name << "\n"
 
 #define VERILOG_PORTMAP(portstr, varstr)  std::to_string("." + portstr + " ( " + varstr + ")")
 #define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))
 
-#define VERILOG_ASSIGN_STATEMENT " assign "
-#define VERILOG_CONT_ASSIGN " = "
+#define VERILOG_ASSIGN_STATEMENT  "assign "
+#define VERILOG_CONT_ASSIGN       " = "
+#define VERILOG_ASSIGN            " <= "
+
+#define VERILOG_CODE_SECTION(a) "\n\n/*\n" a "\n*/\n"

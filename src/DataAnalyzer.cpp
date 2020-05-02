@@ -147,6 +147,8 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
   LOG_S(DA_DBG+1) << "Pointer analysis: \n"; 
   LOG_S(DA_DBG+1) << *valuePointerTy << " ( ID = " << valuePointerTy << ")\n";
   bool staticIndex = true;
+  bool readOnly  = true;
+  bool writeOnly = true;
   int maxIdx = 0;
   const DataLayout & DL = CDI_h->irModule->getDataLayout();
 
@@ -179,19 +181,24 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                     }
                                                           
                                                 }
-        case llvm::Instruction::Load          : break;
-        case llvm::Instruction::Store         : break;
+        case llvm::Instruction::Load          : writeOnly = false; break;
+        case llvm::Instruction::Store         : readOnly  = false; break;
         default : staticIndex = false; LOG_S(ERROR) << I->getOpcodeName() << " is not supported \n";
       }
     }
   }
   
-  if (Argument::classof(valuePointerTy))
-    property.stype = HdlSignalType::inputType;
-  else 
+  if (Argument::classof(valuePointerTy)) {
+    if (readOnly && !writeOnly)
+      property.stype = HdlSignalType::inputType;
+    else if (!readOnly and writeOnly)
+      property.stype = HdlSignalType::outputType;
+    else if (!readOnly && !writeOnly)
+      property.stype = HdlSignalType::inoutType;
+  } else 
     property.stype = HdlSignalType::regType;
   
-  property.isConstant = llvm::Constant::classof(valuePointerTy);  
+  property.isConstant = false; //llvm::Constant::classof(valuePointerTy);  
   
   property.vtype = (maxIdx < 0)? HdlVectorType::scalarType : (staticIndex? HdlVectorType::arrayType : HdlVectorType::memoryType);
   

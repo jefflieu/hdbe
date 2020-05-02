@@ -38,6 +38,7 @@ target_sources(hdbe PUBLIC
     ${hdlbe_src}/VerilogGenerator.cpp
     ${hdlbe_src}/IRPreprocessor.cpp
     ${hdlbe_src}/ValueLifeInfo.cpp
-    ${hdlbe_src}/InstructionScheduler.cpp)
+    ${hdlbe_src}/InstructionScheduler.cpp
+    ${hdlbe_src}/HardwareDescription.cpp)
 
 set_property(TARGET hdbe PROPERTY CXX_STANDARD 17)

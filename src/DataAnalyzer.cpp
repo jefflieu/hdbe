@@ -183,7 +183,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                 }
         case llvm::Instruction::Load          : writeOnly = false; break;
         case llvm::Instruction::Store         : readOnly  = false; break;
-        default : staticIndex = false; LOG_S(ERROR) << I->getOpcodeName() << " is not supported \n";
+        default : staticIndex = false; LOG(ERROR,  I->getOpcodeName() << " is not supported \n");
       }
     }
   }

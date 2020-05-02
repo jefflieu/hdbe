@@ -87,7 +87,8 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
   {
     HdlMemory &var = *I;
     //for each signal, get live time
-    os << writeHdlObjDeclaration(var, "") + ";\n";      
+    if (var.property.stype == HdlSignalType::regType)
+      os << writeHdlObjDeclaration(var, "") + ";\n";      
   }
 }
 
@@ -321,7 +322,10 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
         int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
         String tag0 = "_" + std::to_string(birthCycle);
         int idx = computeIndex(*instr_i, memObj.getIrValue());
-        load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+        if (memObj.property.stype == HdlSignalType::inputType)
+          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + tag0 + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+        else 
+          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
       }
     }   
     

@@ -30,7 +30,8 @@ std::string hdbe::getValueHdlName(Value *val)
   if (val->hasName())
     return val->getName().str();
   else if (llvm::ConstantInt::classof(val))
-    return String("k" + llvm::utostr(static_cast<llvm::ConstantInt*>(val)->getSExtValue()));
+    return String("k" + llvm::utohexstr(reinterpret_cast<uintptr_t>(val)) + "_" + 
+            llvm::utostr(static_cast<llvm::ConstantInt*>(val)->getSExtValue()) + "d");
   else
     return String("s" + llvm::utohexstr(reinterpret_cast<uintptr_t>(val)));  
 }

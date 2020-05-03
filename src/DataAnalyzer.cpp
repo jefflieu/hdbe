@@ -181,6 +181,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                     }
                                                           
                                                 }
+                                                break;
         case llvm::Instruction::Load          : writeOnly = false; break;
         case llvm::Instruction::Store         : readOnly  = false; break;
         default : staticIndex = false; LOG(ERROR,  I->getOpcodeName() << " is not supported \n");
@@ -216,6 +217,8 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
   LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
   LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
   LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
+  LOG_S(DA_DBG + 2) << " ReadOnly    : " << readOnly << "\n";
+  LOG_S(DA_DBG + 2) << " WriteOnly   : " << writeOnly << "\n";
   LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 } 

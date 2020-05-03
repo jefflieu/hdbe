@@ -15,6 +15,9 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
     case llvm::Instruction::Trunc  :
     case llvm::Instruction::ZExt   :
     case llvm::Instruction::SExt   :
+    case llvm::Instruction::Shl    :
+    case llvm::Instruction::LShr   :
+    case llvm::Instruction::AShr   : return 0.0;
     case llvm::Instruction::Add    : return 0.2;
     case llvm::Instruction::Sub    : return 0.2;
     case llvm::Instruction::Mul    : return 0.5;

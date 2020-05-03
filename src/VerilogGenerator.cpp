@@ -9,6 +9,7 @@ using namespace hdbe;
 using String      = std::string;
 using Value       = llvm::Value;
 using Instruction = llvm::Instruction;
+using Twine       = llvm::Twine;
 
 void VerilogGenerator::write() 
 {
@@ -170,26 +171,37 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
+  String opcodeString = "\"" + String(I->getOpcodeName()) + "\"";
   if (llvm::BinaryOperator::classof(I)) {    
-    size = sprintf(buf,"BinaryOp #( ");
+    size = sprintf(buf,"%10sOp #(", "Binary");
     instantiate += String(buf, size);     
-    size = sprintf(buf,"\"%s\",", I->getOpcodeName());
+    size = sprintf(buf,"%10s,", opcodeString.data() );
     instantiate += String(buf, size); 
-    size = sprintf(buf,"%d)", I->getOperand(0)->getType()->getIntegerBitWidth());
+    size = sprintf(buf,"%6d)", I->getOperand(0)->getType()->getIntegerBitWidth());
     instantiate += String(buf, size); 
   } else if (llvm::CmpInst::classof(I)) {
-    size = sprintf(buf,"%sOp #(", I->getOpcodeName());
+    size = sprintf(buf,"%10sOp #(", I->getOpcodeName());
     instantiate += String(buf, size);
-    size = sprintf(buf,"\"%s\",", llvm::CmpInst::getPredicateName( (static_cast<llvm::CmpInst*>(I))->getPredicate()  ).data());
+    Twine predNameString = "\"" + llvm::CmpInst::getPredicateName( (static_cast<llvm::CmpInst*>(I))->getPredicate()) + "\"";
+    size = sprintf(buf,"%10s,", predNameString.str().data());
     instantiate += String(buf, size); 
-    size = sprintf(buf,"%d)", I->getType()->getIntegerBitWidth());
+    size = sprintf(buf,"%6d)", I->getType()->getIntegerBitWidth());
+    instantiate += String(buf, size);
+  } else if (llvm::CastInst::classof(I)) {
+    size = sprintf(buf,"%10sOp #(", "Cast");
+    instantiate += String(buf, size);
+    size = sprintf(buf,"%10s,", opcodeString.data() );
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d,", I->getOperand(0)->getType()->getIntegerBitWidth());
+    instantiate += String(buf, size);
+    size = sprintf(buf,"%6d)", I->getType()->getIntegerBitWidth());
     instantiate += String(buf, size);
   } else {  
-    size = sprintf(buf,"%sOp #(", I->getOpcodeName());
+    size = sprintf(buf,"%10sOp #(", I->getOpcodeName());
     instantiate += String(buf, size);
-    size = sprintf(buf,"\"%s\",", I->getOpcodeName());
+    size = sprintf(buf,"%10s,", opcodeString.data() );
     instantiate += String(buf, size); 
-    size = sprintf(buf,"%d)", I->getType()->getIntegerBitWidth());
+    size = sprintf(buf,"%6d)", I->getType()->getIntegerBitWidth());
     instantiate += String(buf, size); 
     //size = sprintf(buf,"#(.BITWIDTH (%d))n", I->getType()->getIntegerBitWidth());
     //instantiate += String(buf, size); 

@@ -1,0 +1,1511 @@
+clang  -O3 -fno-slp-vectorize -S -emit-llvm -c -o rgb2yuv.ll rgb2yuv.c
+hdbe  rgb2yuv.ll rgb2yuv
+main                : Program starts .. 
+ControlDataInfo     : Module loaded
+IRPreprocessor      : Module loaded
+:: analyzing 
+::::Argument i16* %rgb
+::::Value analysis 
+::::i16* %rgb(0x55a24fbf75e0)
+::::Pointer analysis: 
+::::i16* %rgb ( ID = 0x55a24fbf75e0)
+::  %s12 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+::  %s6 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+::  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 valueID: 58
+::::::TypeID: 15
+::  %s0 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::: end analysis 
+::::Argument i16* %coef
+::::Value analysis 
+::::i16* %coef(0x55a24fbf7608)
+::::Pointer analysis: 
+::::i16* %coef ( ID = 0x55a24fbf7608)
+::  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 valueID: 58
+::::::TypeID: 15
+::  %s1 = load i16, i16* %coef, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 9
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 9
+:::: end analysis 
+::::Argument i16* %yuv
+::::Value analysis 
+::::i16* %yuv(0x55a24fbf7630)
+::::Pointer analysis: 
+::::i16* %yuv ( ID = 0x55a24fbf7630)
+::  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 valueID: 58
+::::::TypeID: 15
+::  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2 valueID: 57
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::::: ReadOnly    : 0
+:::::: WriteOnly   : 1
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::: end analysis 
+::::Value analysis 
+::::; Function Attrs: nofree norecurse nounwind uwtable
+define dso_local void @rgb2yuv(i16* nocapture readonly %rgb, i16* nocapture readonly %coef, i16* nocapture %yuv) local_unnamed_addr #0 {
+entry:
+  %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+  %s1 = load i16, i16* %coef, align 2, !tbaa !2
+  %mul13 = mul i16 %s1, %s0
+  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+  %mul13_1 = mul i16 %s3, %s2
+  %add15_1 = add i16 %mul13_1, %mul13
+  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+  %mul13_2 = mul i16 %s5, %s4
+  %add15_2 = add i16 %mul13_2, %add15_1
+  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2
+  %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+  %mul13_135 = mul i16 %s7, %s6
+  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+  %mul13_1_1 = mul i16 %s9, %s8
+  %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+  %mul13_2_1 = mul i16 %s11, %s10
+  %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+  store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2
+  %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+  %mul13_237 = mul i16 %s13, %s12
+  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+  %mul13_1_2 = mul i16 %s15, %s14
+  %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+  %mul13_2_2 = mul i16 %s17, %s16
+  %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+  store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2
+  ret void
+}
+(0x55a24fbf6fe8)
+::::Analyzing memory ops  %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::Pointer analysis: 
+::::i16* %rgb ( ID = 0x55a24fbf75e0)
+::  %s12 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+::  %s6 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+::  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 valueID: 58
+::::::TypeID: 15
+::  %s0 = load i16, i16* %rgb, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+::::0x55a24fbf75e0 : i16* %rgb
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Analyzing memory ops  %s1 = load i16, i16* %coef, align 2, !tbaa !2
+::::Load Ptr : i16* %coef (0x55a24fbf7608)
+::::done
+::::Pointer analysis: 
+::::i16* %coef ( ID = 0x55a24fbf7608)
+::  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 valueID: 58
+::::::TypeID: 15
+::  %s1 = load i16, i16* %coef, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 9
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+::::0x55a24fbf7608 : i16* %coef
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %s1 = load i16, i16* %coef, align 2, !tbaa !2(0x55a24fbf87c8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf87c8 :   %s1 = load i16, i16* %coef, align 2, !tbaa !2
+::::Value analysis 
+::::  %s0 = load i16, i16* %rgb, align 2, !tbaa !2(0x55a24fbf7808)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf7808 :   %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Value analysis 
+::::i64 1(0x55a24fbf6da0)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf6da0 : i64 1
+::::Analyzing memory ops  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Value analysis 
+::::  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1(0x55a24fbf9500)
+::::Pointer analysis: 
+::::  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 ( ID = 0x55a24fbf9500)
+::  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 valueID: 56
+::  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 valueID: 56
+::  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbf9500 :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::Analyzing memory ops  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf6da0 : i64 1 already in the list
+::::Analyzing memory ops  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 (0x55a24fbf9650)
+::::Analyzing memory ops  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1(0x55a24fbf9650)
+::::Pointer analysis: 
+::::  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 ( ID = 0x55a24fbf9650)
+::  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbf9650 :   %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::::Value analysis 
+::::  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2(0x55a24fbf96f8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf96f8 :   %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2(0x55a24fbf95a8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf95a8 :   %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_1 = mul i16 %s3, %s2(0x55a24fbf9770)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9770 :   %mul13_1 = mul i16 %s3, %s2
+::::Value analysis 
+::::  %mul13 = mul i16 %s1, %s0(0x55a24fbf8e70)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf8e70 :   %mul13 = mul i16 %s1, %s0
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Value analysis 
+::::i64 2(0x55a24fbf9860)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9860 : i64 2
+::::Analyzing memory ops  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Value analysis 
+::::  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2(0x55a24fbf98c0)
+::::Pointer analysis: 
+::::  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 ( ID = 0x55a24fbf98c0)
+::  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 valueID: 56
+::  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 valueID: 56
+::  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbf98c0 :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::Analyzing memory ops  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf9860 : i64 2 already in the list
+::::Analyzing memory ops  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 (0x55a24fbf9a30)
+::::Analyzing memory ops  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2(0x55a24fbf9a30)
+::::Pointer analysis: 
+::::  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 ( ID = 0x55a24fbf9a30)
+::  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbf9a30 :   %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::::Value analysis 
+::::  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2(0x55a24fbf9aa8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9aa8 :   %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2(0x55a24fbf9968)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9968 :   %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_2 = mul i16 %s5, %s4(0x55a24fbf9b20)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9b20 :   %mul13_2 = mul i16 %s5, %s4
+::::Value analysis 
+::::  %add15_1 = add i16 %mul13_1, %mul13(0x55a24fbf97f0)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf97f0 :   %add15_1 = add i16 %mul13_1, %mul13
+::::Analyzing memory ops  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2
+::::Store Ptr : i16* %yuv (0x55a24fbf7630)
+::::done
+::::Pointer analysis: 
+::::i16* %yuv ( ID = 0x55a24fbf7630)
+::  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 valueID: 58
+::::::TypeID: 15
+::  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 valueID: 58
+::::::TypeID: 15
+::  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2 valueID: 57
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 3
+:::::: ReadOnly    : 0
+:::::: WriteOnly   : 1
+:::: end analysis 
+::::0x55a24fbf7630 : i16* %yuv
+::::Value analysis 
+::::  %add15_2 = add i16 %mul13_2, %add15_1(0x55a24fbf9bc0)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9bc0 :   %add15_2 = add i16 %mul13_2, %add15_1
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::Analyzing memory ops  %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Analyzing memory ops  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 3 (0x55a24fbf9eb0)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 3(0x55a24fbf9eb0)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9eb0 : i64 3
+::::Analyzing memory ops  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 (0x55a24fbf9f10)
+::::Analyzing memory ops  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 3 (0x55a24fbf9eb0)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3(0x55a24fbf9f10)
+::::Pointer analysis: 
+::::  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 ( ID = 0x55a24fbf9f10)
+::  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbf9f10 :   %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::::Value analysis 
+::::  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2(0x55a24fbf9fb8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9fb8 :   %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+::::Value analysis 
+::::  %s6 = load i16, i16* %rgb, align 2, !tbaa !2(0x55a24fbf9e68)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbf9e68 :   %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Analyzing memory ops  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf9500 :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 already in the list
+::::Analyzing memory ops  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 4 (0x55a24fbfa1a0)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 4(0x55a24fbfa1a0)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa1a0 : i64 4
+::::Analyzing memory ops  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 (0x55a24fbfa200)
+::::Analyzing memory ops  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 4 (0x55a24fbfa1a0)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4(0x55a24fbfa200)
+::::Pointer analysis: 
+::::  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 ( ID = 0x55a24fbfa200)
+::  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfa200 :   %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::::Value analysis 
+::::  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2(0x55a24fbfa2a8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa2a8 :   %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2(0x55a24fbfa0c8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa0c8 :   %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_1_1 = mul i16 %s9, %s8(0x55a24fbfa320)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa320 :   %mul13_1_1 = mul i16 %s9, %s8
+::::Value analysis 
+::::  %mul13_135 = mul i16 %s7, %s6(0x55a24fbfa030)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa030 :   %mul13_135 = mul i16 %s7, %s6
+::::Analyzing memory ops  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf98c0 :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 already in the list
+::::Analyzing memory ops  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 5 (0x55a24fbfa4b0)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 5(0x55a24fbfa4b0)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa4b0 : i64 5
+::::Analyzing memory ops  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 (0x55a24fbfa510)
+::::Analyzing memory ops  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 5 (0x55a24fbfa4b0)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5(0x55a24fbfa510)
+::::Pointer analysis: 
+::::  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 ( ID = 0x55a24fbfa510)
+::  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfa510 :   %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::::Value analysis 
+::::  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2(0x55a24fbfa5b8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa5b8 :   %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2(0x55a24fbfa468)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa468 :   %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_2_1 = mul i16 %s11, %s10(0x55a24fbfa630)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa630 :   %mul13_2_1 = mul i16 %s11, %s10
+::::Value analysis 
+::::  %add15_1_1 = add i16 %mul13_1_1, %mul13_135(0x55a24fbfa3d0)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa3d0 :   %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+::::Analyzing memory ops  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::0x55a24fbf6da0 : i64 1 already in the list
+::::Analyzing memory ops  store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2
+::::Store Ptr :   %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 (0x55a24fbfa790)
+::::Analyzing memory ops  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::Value analysis 
+::::  %add15_2_1 = add i16 %mul13_2_1, %add15_1_1(0x55a24fbfa6e0)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa6e0 :   %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+::::Value analysis 
+::::  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1(0x55a24fbfa790)
+::::Pointer analysis: 
+::::  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 ( ID = 0x55a24fbfa790)
+::  store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2 valueID: 57
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 0
+:::::: WriteOnly   : 1
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfa790 :   %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::::Analyzing memory ops  %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::Analyzing memory ops  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 6 (0x55a24fbfa900)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 6(0x55a24fbfa900)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa900 : i64 6
+::::Analyzing memory ops  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 (0x55a24fbfa960)
+::::Analyzing memory ops  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 6 (0x55a24fbfa900)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6(0x55a24fbfa960)
+::::Pointer analysis: 
+::::  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 ( ID = 0x55a24fbfa960)
+::  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfa960 :   %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::::Value analysis 
+::::  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2(0x55a24fbfaa08)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfaa08 :   %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+::::Value analysis 
+::::  %s12 = load i16, i16* %rgb, align 2, !tbaa !2(0x55a24fbfa8b8)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfa8b8 :   %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Analyzing memory ops  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf9500 :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 already in the list
+::::Analyzing memory ops  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 7 (0x55a24fbfab60)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 7(0x55a24fbfab60)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfab60 : i64 7
+::::Analyzing memory ops  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 (0x55a24fbfabc0)
+::::Analyzing memory ops  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 7 (0x55a24fbfab60)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7(0x55a24fbfabc0)
+::::Pointer analysis: 
+::::  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 ( ID = 0x55a24fbfabc0)
+::  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfabc0 :   %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::::Value analysis 
+::::  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2(0x55a24fbfaf88)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfaf88 :   %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2(0x55a24fbfab18)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfab18 :   %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_1_2 = mul i16 %s15, %s14(0x55a24fbfb000)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb000 :   %mul13_1_2 = mul i16 %s15, %s14
+::::Value analysis 
+::::  %mul13_237 = mul i16 %s13, %s12(0x55a24fbfaa80)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfaa80 :   %mul13_237 = mul i16 %s13, %s12
+::::Analyzing memory ops  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::0x55a24fbf75e0 : i16* %rgb already in the list
+::::0x55a24fbf98c0 :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 already in the list
+::::Analyzing memory ops  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 8 (0x55a24fbfb2a0)
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::i64 8(0x55a24fbfb2a0)
+:::::: isConstant  : 1
+:::::: bitwidth    : 64
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb2a0 : i64 8
+::::Analyzing memory ops  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 (0x55a24fbfa140)
+::::Analyzing memory ops  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 8 (0x55a24fbfb2a0)
+::::done
+::::done
+::::0x55a24fbf7608 : i16* %coef already in the list
+::::Value analysis 
+::::  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8(0x55a24fbfa140)
+::::Pointer analysis: 
+::::  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 ( ID = 0x55a24fbfa140)
+::  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2 valueID: 56
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 1
+:::::: WriteOnly   : 0
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfa140 :   %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::::Value analysis 
+::::  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2(0x55a24fbfb318)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb318 :   %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2(0x55a24fbfb148)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb148 :   %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Value analysis 
+::::  %mul13_2_2 = mul i16 %s17, %s16(0x55a24fbfb390)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb390 :   %mul13_2_2 = mul i16 %s17, %s16
+::::Value analysis 
+::::  %add15_1_2 = add i16 %mul13_1_2, %mul13_237(0x55a24fbfb0b0)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb0b0 :   %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+::::Analyzing memory ops  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::0x55a24fbf9860 : i64 2 already in the list
+::::Analyzing memory ops  store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2
+::::Store Ptr :   %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 (0x55a24fbfb4f0)
+::::Analyzing memory ops  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::0x55a24fbf7630 : i16* %yuv already in the list
+::::Value analysis 
+::::  %add15_2_2 = add i16 %mul13_2_2, %add15_1_2(0x55a24fbfb440)
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 0
+:::: end analysis 
+::::0x55a24fbfb440 :   %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+::::Value analysis 
+::::  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2(0x55a24fbfb4f0)
+::::Pointer analysis: 
+::::  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 ( ID = 0x55a24fbfb4f0)
+::  store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2 valueID: 57
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::::: ReadOnly    : 0
+:::::: WriteOnly   : 1
+:::: end analysis 
+:::::: isConstant  : 0
+:::::: bitwidth    : 16
+:::::: arraylength : 1
+:::: end analysis 
+::::0x55a24fbfb4f0 :   %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+schedule            : Scheduling of function rgb2yuv
+::Assigning birth time to global variables and arguments 
+::i16* %rgb
+::i16* %coef
+::i16* %yuv
+schedule            : Collecting instructions for scheduling
+:: Block : entry
+::Instruction: 0x55a24fbf7808    %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+::Instruction: 0x55a24fbf87c8    %s1 = load i16, i16* %coef, align 2, !tbaa !2
+::Instruction: 0x55a24fbf8e70    %mul13 = mul i16 %s1, %s0
+::Instruction: 0x55a24fbf9500    %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::Instruction: 0x55a24fbf95a8    %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9650    %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::Instruction: 0x55a24fbf96f8    %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9770    %mul13_1 = mul i16 %s3, %s2
+::Instruction: 0x55a24fbf97f0    %add15_1 = add i16 %mul13_1, %mul13
+::Instruction: 0x55a24fbf98c0    %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::Instruction: 0x55a24fbf9968    %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9a30    %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::Instruction: 0x55a24fbf9aa8    %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9b20    %mul13_2 = mul i16 %s5, %s4
+::Instruction: 0x55a24fbf9bc0    %add15_2 = add i16 %mul13_2, %add15_1
+::Instruction: 0x55a24fbf9e00    store i16 %add15_2, i16* %yuv, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9e68    %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+::Instruction: 0x55a24fbf9f10    %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::Instruction: 0x55a24fbf9fb8    %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa030    %mul13_135 = mul i16 %s7, %s6
+::Instruction: 0x55a24fbfa0c8    %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa200    %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::Instruction: 0x55a24fbfa2a8    %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa320    %mul13_1_1 = mul i16 %s9, %s8
+::Instruction: 0x55a24fbfa3d0    %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+::Instruction: 0x55a24fbfa468    %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa510    %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::Instruction: 0x55a24fbfa5b8    %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa630    %mul13_2_1 = mul i16 %s11, %s10
+::Instruction: 0x55a24fbfa6e0    %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+::Instruction: 0x55a24fbfa790    %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::Instruction: 0x55a24fbfa850    store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa8b8    %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa960    %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::Instruction: 0x55a24fbfaa08    %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+::Instruction: 0x55a24fbfaa80    %mul13_237 = mul i16 %s13, %s12
+::Instruction: 0x55a24fbfab18    %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::Instruction: 0x55a24fbfabc0    %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::Instruction: 0x55a24fbfaf88    %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbfb000    %mul13_1_2 = mul i16 %s15, %s14
+::Instruction: 0x55a24fbfb0b0    %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+::Instruction: 0x55a24fbfb148    %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbfa140    %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::Instruction: 0x55a24fbfb318    %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbfb390    %mul13_2_2 = mul i16 %s17, %s16
+::Instruction: 0x55a24fbfb440    %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+::Instruction: 0x55a24fbfb4f0    %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::Instruction: 0x55a24fbfb5b0    store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2
+::Instruction: 0x55a24fbf99b0    ret void
+::::  %s0 = load i16, i16* %rgb, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf75e0 i16* %rgb
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s1 = load i16, i16* %coef, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13 = mul i16 %s1, %s0 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbf87c8   %s1 = load i16, i16* %coef, align 2, !tbaa !2
+::::::::0x55a24fbf7808   %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf75e0 i16* %rgb
+::::::::0x55a24fbf6da0 i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9500   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbf6da0 i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9650   %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_1 = mul i16 %s3, %s2 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbf96f8   %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+::::::::0x55a24fbf95a8   %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_1 = add i16 %mul13_1, %mul13 with opcode add
+::::::Processing operand
+::::::::0x55a24fbf9770   %mul13_1 = mul i16 %s3, %s2
+::::::::0x55a24fbf8e70   %mul13 = mul i16 %s1, %s0
+::::Timing info: 5.000000e-01 7.000000e-01
+::ok to be scheduled, valid time 7.000000e-01
+::::  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf75e0 i16* %rgb
+::::::::0x55a24fbf9860 i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf98c0   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbf9860 i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9a30   %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_2 = mul i16 %s5, %s4 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbf9aa8   %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+::::::::0x55a24fbf9968   %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_2 = add i16 %mul13_2, %add15_1 with opcode add
+::::::Processing operand
+::::::::0x55a24fbf9b20   %mul13_2 = mul i16 %s5, %s4
+::::::::0x55a24fbf97f0   %add15_1 = add i16 %mul13_1, %mul13
+::::Timing info: 7.000000e-01 9.000000e-01
+::ok to be scheduled, valid time 9.000000e-01
+::::  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2 with opcode store
+::::::Processing operand
+::::::::0x55a24fbf9bc0   %add15_2 = add i16 %mul13_2, %add15_1
+::::::::0x55a24fbf7630 i16* %yuv
+::::Timing info: 9.000000e-01 1.000000e+00
+::ok to be scheduled, valid time 1.000000e+00
+::::  %s6 = load i16, i16* %rgb, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf75e0 i16* %rgb
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbf9eb0 i64 3
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9f10   %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_135 = mul i16 %s7, %s6 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbf9fb8   %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+::::::::0x55a24fbf9e68   %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9500   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbfa1a0 i64 4
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbfa200   %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_1_1 = mul i16 %s9, %s8 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbfa2a8   %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+::::::::0x55a24fbfa0c8   %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_1_1 = add i16 %mul13_1_1, %mul13_135 with opcode add
+::::::Processing operand
+::::::::0x55a24fbfa320   %mul13_1_1 = mul i16 %s9, %s8
+::::::::0x55a24fbfa030   %mul13_135 = mul i16 %s7, %s6
+::::Timing info: 5.000000e-01 7.000000e-01
+::ok to be scheduled, valid time 7.000000e-01
+::::  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf98c0   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbfa4b0 i64 5
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbfa510   %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_2_1 = mul i16 %s11, %s10 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbfa5b8   %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+::::::::0x55a24fbfa468   %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_2_1 = add i16 %mul13_2_1, %add15_1_1 with opcode add
+::::::Processing operand
+::::::::0x55a24fbfa630   %mul13_2_1 = mul i16 %s11, %s10
+::::::::0x55a24fbfa3d0   %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+::::Timing info: 7.000000e-01 9.000000e-01
+::ok to be scheduled, valid time 9.000000e-01
+::::  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7630 i16* %yuv
+::::::::0x55a24fbf6da0 i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2 with opcode store
+::::::Processing operand
+::::::::0x55a24fbfa6e0   %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+::::::::0x55a24fbfa790   %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::::Timing info: 9.000000e-01 1.000000e+00
+::ok to be scheduled, valid time 1.000000e+00
+::::  %s12 = load i16, i16* %rgb, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf75e0 i16* %rgb
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbfa900 i64 6
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbfa960   %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_237 = mul i16 %s13, %s12 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbfaa08   %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+::::::::0x55a24fbfa8b8   %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf9500   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbfab60 i64 7
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbfabc0   %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_1_2 = mul i16 %s15, %s14 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbfaf88   %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+::::::::0x55a24fbfab18   %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_1_2 = add i16 %mul13_1_2, %mul13_237 with opcode add
+::::::Processing operand
+::::::::0x55a24fbfb000   %mul13_1_2 = mul i16 %s15, %s14
+::::::::0x55a24fbfaa80   %mul13_237 = mul i16 %s13, %s12
+::::Timing info: 5.000000e-01 7.000000e-01
+::ok to be scheduled, valid time 7.000000e-01
+::::  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbf98c0   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7608 i16* %coef
+::::::::0x55a24fbfb2a0 i64 8
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2 with opcode load
+::::::Processing operand
+::::::::0x55a24fbfa140   %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  %mul13_2_2 = mul i16 %s17, %s16 with opcode mul
+::::::Processing operand
+::::::::0x55a24fbfb318   %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+::::::::0x55a24fbfb148   %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Timing info: 0.000000e+00 5.000000e-01
+::ok to be scheduled, valid time 5.000000e-01
+::::  %add15_2_2 = add i16 %mul13_2_2, %add15_1_2 with opcode add
+::::::Processing operand
+::::::::0x55a24fbfb390   %mul13_2_2 = mul i16 %s17, %s16
+::::::::0x55a24fbfb0b0   %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+::::Timing info: 7.000000e-01 9.000000e-01
+::ok to be scheduled, valid time 9.000000e-01
+::::  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 with opcode getelementptr
+::::::Processing operand
+::::::::0x55a24fbf7630 i16* %yuv
+::::::::0x55a24fbf9860 i64 2
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+::::  store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2 with opcode store
+::::::Processing operand
+::::::::0x55a24fbfb440   %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+::::::::0x55a24fbfb4f0   %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::::Timing info: 9.000000e-01 1.000000e+00
+::ok to be scheduled, valid time 1.000000e+00
+::::  ret void with opcode ret
+::::::Processing operand
+::::Timing info: 0.000000e+00 0.000000e+00
+::ok to be scheduled, valid time 0.000000e+00
+schedule            : ... done 
+i16* %rgb
+i16* %coef
+i16* %yuv
+  %s1 = load i16, i16* %coef, align 2, !tbaa !2
+  %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+i64 1
+  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %mul13_1 = mul i16 %s3, %s2
+  %mul13 = mul i16 %s1, %s0
+i64 2
+  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %mul13_2 = mul i16 %s5, %s4
+  %add15_1 = add i16 %mul13_1, %mul13
+  %add15_2 = add i16 %mul13_2, %add15_1
+i64 3
+  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+  %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+i64 4
+  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %mul13_1_1 = mul i16 %s9, %s8
+  %mul13_135 = mul i16 %s7, %s6
+i64 5
+  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %mul13_2_1 = mul i16 %s11, %s10
+  %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+  %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+i64 6
+  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+  %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+i64 7
+  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+  %mul13_1_2 = mul i16 %s15, %s14
+  %mul13_237 = mul i16 %s13, %s12
+i64 8
+  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+  %mul13_2_2 = mul i16 %s17, %s16
+  %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+  %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+writeInstructions   :   %s1 = load i16, i16* %coef, align 2, !tbaa !2
+writeInstructions   :   %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+writeInstructions   :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+writeInstructions   :   %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+writeInstructions   :   %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+writeInstructions   :   %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+writeInstructions   :   %mul13_1 = mul i16 %s3, %s2
+writeInstructions   :   %mul13 = mul i16 %s1, %s0
+writeInstructions   :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+writeInstructions   :   %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+writeInstructions   :   %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+writeInstructions   :   %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+writeInstructions   :   %mul13_2 = mul i16 %s5, %s4
+writeInstructions   :   %add15_1 = add i16 %mul13_1, %mul13
+writeInstructions   :   %add15_2 = add i16 %mul13_2, %add15_1
+writeInstructions   :   %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+writeInstructions   :   %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+writeInstructions   :   %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+writeInstructions   :   %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+writeInstructions   :   %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+writeInstructions   :   %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+writeInstructions   :   %mul13_1_1 = mul i16 %s9, %s8
+writeInstructions   :   %mul13_135 = mul i16 %s7, %s6
+writeInstructions   :   %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+writeInstructions   :   %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+writeInstructions   :   %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+writeInstructions   :   %mul13_2_1 = mul i16 %s11, %s10
+writeInstructions   :   %add15_1_1 = add i16 %mul13_1_1, %mul13_135
+writeInstructions   :   %add15_2_1 = add i16 %mul13_2_1, %add15_1_1
+writeInstructions   :   %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+writeInstructions   :   %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+writeInstructions   :   %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+writeInstructions   :   %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+writeInstructions   :   %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+writeInstructions   :   %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+writeInstructions   :   %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+writeInstructions   :   %mul13_1_2 = mul i16 %s15, %s14
+writeInstructions   :   %mul13_237 = mul i16 %s13, %s12
+writeInstructions   :   %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+writeInstructions   :   %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+writeInstructions   :   %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+writeInstructions   :   %mul13_2_2 = mul i16 %s17, %s16
+writeInstructions   :   %add15_1_2 = add i16 %mul13_1_2, %mul13_237
+writeInstructions   :   %add15_2_2 = add i16 %mul13_2_2, %add15_1_2
+writeInstructions   :   %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::::Analyzing memory ops  %s0 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::Analyzing memory ops  %s2 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::Analyzing memory ops  %s4 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::Analyzing memory ops  %s6 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::Analyzing memory ops  %s8 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::Analyzing memory ops  %s10 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::Analyzing memory ops  %s12 = load i16, i16* %rgb, align 2, !tbaa !2
+::::Load Ptr : i16* %rgb (0x55a24fbf75e0)
+::::done
+::::Analyzing memory ops  %s14 = load i16, i16* %arrayidx_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1 (0x55a24fbf9500)
+::::Analyzing memory ops  %arrayidx_1 = getelementptr inbounds i16, i16* %rgb, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::Analyzing memory ops  %s16 = load i16, i16* %arrayidx_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2 (0x55a24fbf98c0)
+::::Analyzing memory ops  %arrayidx_2 = getelementptr inbounds i16, i16* %rgb, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %rgb (0x55a24fbf75e0)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::Analyzing memory ops  %s1 = load i16, i16* %coef, align 2, !tbaa !2
+::::Load Ptr : i16* %coef (0x55a24fbf7608)
+::::done
+::::Analyzing memory ops  %s3 = load i16, i16* %arrayidx11_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1 (0x55a24fbf9650)
+::::Analyzing memory ops  %arrayidx11_1 = getelementptr inbounds i16, i16* %coef, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::Analyzing memory ops  %s5 = load i16, i16* %arrayidx11_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2 (0x55a24fbf9a30)
+::::Analyzing memory ops  %arrayidx11_2 = getelementptr inbounds i16, i16* %coef, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+::::Analyzing memory ops  %s7 = load i16, i16* %arrayidx11_134, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3 (0x55a24fbf9f10)
+::::Analyzing memory ops  %arrayidx11_134 = getelementptr inbounds i16, i16* %coef, i64 3
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 3 (0x55a24fbf9eb0)
+::::done
+::::done
+::::Analyzing memory ops  %s9 = load i16, i16* %arrayidx11_1_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4 (0x55a24fbfa200)
+::::Analyzing memory ops  %arrayidx11_1_1 = getelementptr inbounds i16, i16* %coef, i64 4
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 4 (0x55a24fbfa1a0)
+::::done
+::::done
+::::Analyzing memory ops  %s11 = load i16, i16* %arrayidx11_2_1, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5 (0x55a24fbfa510)
+::::Analyzing memory ops  %arrayidx11_2_1 = getelementptr inbounds i16, i16* %coef, i64 5
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 5 (0x55a24fbfa4b0)
+::::done
+::::done
+::::Analyzing memory ops  %s13 = load i16, i16* %arrayidx11_236, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6 (0x55a24fbfa960)
+::::Analyzing memory ops  %arrayidx11_236 = getelementptr inbounds i16, i16* %coef, i64 6
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 6 (0x55a24fbfa900)
+::::done
+::::done
+::::Analyzing memory ops  %s15 = load i16, i16* %arrayidx11_1_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7 (0x55a24fbfabc0)
+::::Analyzing memory ops  %arrayidx11_1_2 = getelementptr inbounds i16, i16* %coef, i64 7
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 7 (0x55a24fbfab60)
+::::done
+::::done
+::::Analyzing memory ops  %s17 = load i16, i16* %arrayidx11_2_2, align 2, !tbaa !2
+::::Load Ptr :   %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8 (0x55a24fbfa140)
+::::Analyzing memory ops  %arrayidx11_2_2 = getelementptr inbounds i16, i16* %coef, i64 8
+::::TypeID   : 15
+::::Base Ptr : i16* %coef (0x55a24fbf7608)
+::::Indx Ptr : i64 8 (0x55a24fbfb2a0)
+::::done
+::::done
+::::Analyzing memory ops  store i16 %add15_2, i16* %yuv, align 2, !tbaa !2
+::::Store Ptr : i16* %yuv (0x55a24fbf7630)
+::::done
+::::Analyzing memory ops  store i16 %add15_2_1, i16* %arrayidx18_1, align 2, !tbaa !2
+::::Store Ptr :   %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1 (0x55a24fbfa790)
+::::Analyzing memory ops  %arrayidx18_1 = getelementptr inbounds i16, i16* %yuv, i64 1
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 1 (0x55a24fbf6da0)
+::::done
+::::done
+::::Analyzing memory ops  store i16 %add15_2_2, i16* %arrayidx18_2, align 2, !tbaa !2
+::::Store Ptr :   %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2 (0x55a24fbfb4f0)
+::::Analyzing memory ops  %arrayidx18_2 = getelementptr inbounds i16, i16* %yuv, i64 2
+::::TypeID   : 15
+::::Base Ptr : i16* %yuv (0x55a24fbf7630)
+::::Indx Ptr : i64 2 (0x55a24fbf9860)
+::::done
+::::done
+main                : Program ends .. 
+clang  -O3 -fno-slp-vectorize -S -emit-llvm -c -o rbg2yuv.ll rbg2yuv.c
+hdbe  rbg2yuv.ll rbg2yuv
+../ex.mak:14: recipe for target 'rbg2yuv.sv' failed

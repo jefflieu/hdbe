@@ -1,7 +1,8 @@
 
 
 CLANG := clang 
-FLAGS := -O3 -fno-slp-vectorize -S -emit-llvm -c
+FLAGS := 
+CLANG_FLAGS := -O3 -fno-slp-vectorize -S -emit-llvm -c $(FLAGS)
 HDBE  := hdbe 
 SRCS := $(wildcard *.c)
 SIM_BLD := sim
@@ -14,7 +15,7 @@ SIM_BLD := sim
 	$(HDBE) $^ $*
 
 %.ll : %.c
-	$(CLANG) $(FLAGS) -o $@ $^
+	$(CLANG) $(CLANG_FLAGS) -o $@ $^
 
 all: $(SRCS:.c=.sv) sim/Makefile
 	make -C $(SIM_BLD)

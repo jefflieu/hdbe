@@ -6,7 +6,7 @@
 
 // Include common routines
 #include <verilated.h>
-
+#include <cstdlib>
 // Include model header, generated from Verilating "top.v"
 #include "Vcounter.h"
 
@@ -54,17 +54,16 @@ int main(int argc, char** argv, char** env) {
     top->ld = 0;
     top->load = 20;
 
-    const int kSAMPLES = 10;
-    int ref[kSAMPLES];
-    int ret[kSAMPLES];
-    int sample;
+    const int kCALLS         = 10;
+    const int kCLK_PER_CALL  = 1;
+    int calls = 0, returns = 0;
+    int Reference[kCALLS];
+    int Returns[kCALLS];
+    int simResult = -1;
    
     //VL_PRINTF("Expected value %d\n", ref);
 
-    // Simulate until $finish
-    sample = 0;
-    //while (!Verilated::gotFinish()) {
-    while (! (top->func_done and sample == kSAMPLES) ) {
+    while (! (top->func_done and calls == kCALLS) ) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -74,12 +73,15 @@ int main(int argc, char** argv, char** env) {
         // to where the controls are sampled; in this example we do
         // this only on a negedge of clk, because we know
         // reset is not sampled there.
-        if (!top->func_clk) {
-            if (main_time == 4) {
-                top->func_start = 1;  // Assert reset
-                top->ld = 1;  // Assert reset
-            } else {
-              top->ld = 0;
+        if (!top->func_clk && main_time >= 4) {
+            top->func_start = (main_time >> 1) & kCLK_PER_CALL;  // Assert reset
+            top->ld   = rand() & 1;  
+            top->inc  = rand();  
+            top->load = rand();  
+            if (top->func_start)
+            {
+              Reference[calls] = counter(top->ld, top->load, top->inc);
+              calls++;
             } 
         }
 
@@ -88,10 +90,10 @@ int main(int argc, char** argv, char** env) {
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
-
+        simResult = 0;
         if (top->func_done && top->func_clk) {
-          ret[sample] = top->func_ret;
-          sample++;
+          Returns[returns] = top->func_ret;
+          returns++;
         }
 
         // Read outputs
@@ -100,6 +102,13 @@ int main(int argc, char** argv, char** env) {
     }
     // Final model cleanup
     top->final();
+
+    //Check
+    for(uint32_t chk = 0; chk < kCALLS; chk++)
+    {
+      if (Reference[chk] != Returns[chk]) simResult++;
+    }
+
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
@@ -111,5 +120,5 @@ int main(int argc, char** argv, char** env) {
     delete top; top = NULL;
 
     // Fin
-    exit(0);
+    exit(simResult);
 }

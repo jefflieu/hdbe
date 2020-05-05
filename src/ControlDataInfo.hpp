@@ -1,3 +1,7 @@
+/*
+  Author      : Jeff Lieu <lieumychuong@gmail.com>
+
+*/
 #pragma once 
 
 #include <typeinfo> 
@@ -32,7 +36,7 @@ class ControlDataInfo {
     Module   *irModule   = nullptr; 
     Function *irFunction = nullptr;
     
-  
+
     std::list<HdlPort     > portList;
     std::list<HdlVariable > variableList;
     std::list<HdlMemory   > memObjList;

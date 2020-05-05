@@ -4,6 +4,9 @@
 #include "logging/logger.hpp"
 #include "IRUtil.hpp"
 
+
+#define VG_DBG 6
+
 using namespace hdbe;
 
 using String      = std::string;
@@ -76,7 +79,7 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     //for each signal, get live time 
     int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
     int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
-    LOG_S(0) << *(var.getIrValue()) << "\n";
+    LOG_S(VG_DBG) << *(var.getIrValue()) << " " << birthTime << " " << liveTime << "\n";
     for(uint32_t i = birthTime; i <= liveTime; i++)
       {
         String tag = "_" + std::to_string(i);
@@ -152,7 +155,7 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
   {    
     //
     if (llvm::Instruction::classof(var_i->getIrValue())) {
-      LOG(INFO, *(var_i->getIrValue()));
+      //LOG(INFO, *(var_i->getIrValue()));
       auto instr = static_cast<Instruction*>(var_i->getIrValue());
       if (isMemoryInstruction(instr)) {
       } else {

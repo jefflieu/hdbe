@@ -54,12 +54,16 @@ void InstructionScheduler::schedule(Function * irFunction)
       ret.first->second.setBirthTime(nullptr, 0.0);     
     }
 
+  //Assign valid_time for constants
+
+
   LOG(INFO, "Collecting instructions for scheduling");
   for(auto bb_i = F.begin(), bb_end = F.end(); bb_i != bb_end ; ++bb_i)
   {
       LOG_S(IS_DBG) << " Block : " << bb_i->getName() << "\n";
       std::list<Instruction * > instructions;                      
-      //Collecting all instructions in the basic block 
+      
+      /// Collecting all instructions in the basic block 
       for(auto ins_i = bb_i->begin(), ins_end = bb_i->end(); ins_i != ins_end; ++ ins_i)
       {
         instructions.push_back(&*ins_i);
@@ -69,7 +73,18 @@ void InstructionScheduler::schedule(Function * irFunction)
           ins_i->setName(Twine('s') + Twine::utohexstr(reinterpret_cast<intptr_t>(&*ins_i)));
         }        
         
-        LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";              
+        LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";   
+        
+        //Assigning Valid time for constants
+        for(const llvm::Use &use : ins_i->operands())
+          {
+            llvm::Value* val = use.get();
+            if (llvm::Constant::classof(val))
+            {
+              auto ret = CDI_h->addValueInfo(&*val);
+              ret.first->second.setBirthTime(nullptr, 0.0);  
+            }
+          }                        
       }
     
   
@@ -103,7 +118,7 @@ void InstructionScheduler::schedule(Function * irFunction)
                 LOG_S(IS_DBG + 3) << val << " " << *val << "\n";
                 
                 //Don't check if the operand is constant
-                if (llvm::Constant::classof(val)) continue;
+                //if (llvm::Constant::classof(val)) continue;
                 
                 if (VIM.count(val) == 0) {
                   dependency_valid = 1.0e6; 

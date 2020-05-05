@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  hdbe::g_verbosity = 6;
+  hdbe::g_verbosity = 0;
   
   LOG(INFO, "Program starts .. ");
  
@@ -41,14 +41,24 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-
+  //////////////////////////////////////////////////////
+  ///   Control Data Info is the main object that holds 
+  /// lots of  information relevant to the HDL generation processes
   ControlDataInfo CDI(Mod.get(), funcName);
+
+  /// Preprocessing the IR data structure
   IRPreprocessor IRPrep(Mod.get(), funcName);
   IRPrep.transformNames();
+
+  /// Perform data analysis
   DataAnalyzer DAnalyzer(&CDI);
   DAnalyzer.analyze();
+  
+  /// Schedule the instructions
   InstructionScheduler IS(&CDI);
   IS.schedule();
+
+  /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);
   VGen.write();
   

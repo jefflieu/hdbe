@@ -287,7 +287,7 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
         assign += "if (" + state.getName().str() + ")\n";
         assign += "begin\n";
         assign += "func_done <= 1'b1;\n";
-        if (state.termInstruction->getNumOperands() > 0)
+        if (state.termInstruction != nullptr && state.termInstruction->getNumOperands() > 0)
           assign += "func_ret  <= " + state.termInstruction->getOperand(0)->getName().str() + tag + VERILOG_ENDL;
         assign += "end\n"; 
       }
@@ -304,16 +304,23 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
 Ostream& VerilogGenerator::writeVCDLogging(Ostream& os)
 {
 // Print some stuff as an example
-  String str = String(
-"\n\n\
+char buf[512];
+auto F = CDI_h->irFunction;
+auto fileName = F->getName().str().data();
+int size;
+
+size = sprintf(buf,"\n\n\
 initial begin \n\
   if ($test$plusargs(\"trace\") != 0) begin \n\
-    $display(\"[%0t] Tracing to logs/vlt_dump.vcd...\", $time); \n\
-    $dumpfile(\"logs/vlt_dump.vcd\"); \n\
+    $display(\"[%%0t] Tracing to logs/%s.vcd...\", $time); \n\
+    $dumpfile(\"logs/%s.vcd\"); \n\
     $dumpvars(); \n\
   end \n\
-  $display(\"[%0t] Model running...\", $time);\n\
-end\n\n");
+  $display(\"[%%0t] Model running...\", $time);\n\
+end\n\n", 
+  fileName, fileName
+  );
+  String str = String(buf, size);  
   return os  << str;
 }
 

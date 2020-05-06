@@ -12,7 +12,7 @@ void rgb2yuv(u16* rgb, s16 * coef, s16* yuv)
       {
         s+=rgb[j]*((s32)coef[IDX(i,j)]);
       }
-      yuv[i] = (s >> FRAC);
+      yuv[i] = (s >> FRAC) + OFFSET[i];
     }
   
   return;

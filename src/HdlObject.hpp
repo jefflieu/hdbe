@@ -5,6 +5,7 @@
 #include "llvm/IR/Value.h"
 
 #include "HDLUtil.hpp"
+#include "logging/logger.hpp"
 
 namespace hdbe {
 

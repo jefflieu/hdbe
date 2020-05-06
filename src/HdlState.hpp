@@ -27,6 +27,7 @@ class HdlState : public HdlObject {
     BasicBlock * block = nullptr;        
     int id = 0;
     String name = "state_00";
+    bool is_last;
   
   public: 
     HdlState (BasicBlock *bb, int _id) :  block(bb), id(_id) { name = "state_" + block->getName().str() + std::to_string(id);}
@@ -38,11 +39,21 @@ class HdlState : public HdlObject {
     
     
     int   getId() {return this->id;}
-    bool  isBranch() {return (termInstruction!=nullptr);}
+    bool  isBranch() {return (termInstruction!=nullptr) || is_last;}
     void  setId(int _id) {id = _id;}
     bool  isEntry() {return (id == 0);}
-    bool  isReturn() { if (!termInstruction) return false; 
-                      return (termInstruction->getOpcode() == llvm::Instruction::Ret);}    
+    bool  isReturn() { if (!termInstruction) return is_last; 
+                       return (termInstruction->getOpcode() == llvm::Instruction::Ret);} 
+    void  isLast(bool tf)  {is_last = tf;}
+    void  dump(){
+      _log_stdout << name << "\n";
+      for(Instruction* i : instructionList)
+      {
+        _log_stdout<<"Instruction: " << (*i) << "\n";
+      }
+      if (termInstruction)
+        _log_stdout<<"Terminator : " << (*termInstruction) << "\n";
+    }                     
 };
 
 }

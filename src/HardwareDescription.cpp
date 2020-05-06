@@ -18,13 +18,14 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
     case llvm::Instruction::Shl    :
     case llvm::Instruction::LShr   :
     case llvm::Instruction::AShr   : return 0.0;
-    case llvm::Instruction::Add    : return 0.2;
-    case llvm::Instruction::Sub    : return 0.2;
-    case llvm::Instruction::Mul    : return 0.5;
+    case llvm::Instruction::Add    : return 0.4;
+    case llvm::Instruction::Sub    : return 0.4;
+    case llvm::Instruction::Mul    : return 0.8;
     case llvm::Instruction::Select : return 0.1;
     case llvm::Instruction::Load   : return 0.0;
     case llvm::Instruction::Store  : return 1.0;
     case llvm::Instruction::GetElementPtr  : return 0.0;
+    case llvm::Instruction::Ret    : return 0.0;
     default: return 1.0;
   }
 }

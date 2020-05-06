@@ -66,7 +66,9 @@ void InstructionScheduler::schedule(Function * irFunction)
       /// Collecting all instructions in the basic block 
       for(auto ins_i = bb_i->begin(), ins_end = bb_i->end(); ins_i != ins_end; ++ ins_i)
       {
-        instructions.push_back(&*ins_i);
+        //Only handle 1 return instruction
+        if (! isUselessInstruction(&*ins_i) )
+          instructions.push_back(&*ins_i);
         
         //Update name
         if (ins_i->getName().empty() && !ins_i->getType()->isVoidTy()) {
@@ -141,7 +143,7 @@ void InstructionScheduler::schedule(Function * irFunction)
                   
           
           //Ok to be schedule 
-          if (valid_time < (step + 1.0) || latency >= 1.0) {
+          if (valid_time < (step + 1.0) || (latency >= 1.0 && dependency_valid <(step+1.0))) {
             
             if (I->isTerminator())
               state.termInstruction = I;
@@ -169,12 +171,16 @@ void InstructionScheduler::schedule(Function * irFunction)
             ++ list_i;
 
           }
+
         }   
         step ++ ; 
         //For debugging
         ASSERT(step < 20, "Something wrong in scheduling process") ;
     }
+    stateList.back().isLast(true);
   }
+
+  
 
   //Update the values that has no state bound to it 
   for(auto map_i = VIM.begin(), map_end = VIM.end(); map_i!=map_end; ++ map_i)

@@ -61,6 +61,8 @@ int main(int argc, char **argv) {
   /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);
   VGen.write();
+
+  CDI.dumpStateList();
   
   LOG(INFO, "Program ends .. "); 
   return 0;

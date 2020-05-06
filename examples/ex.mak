@@ -17,7 +17,7 @@ SIM_BLD := sim
 %.ll : %.c
 	$(CLANG) $(CLANG_FLAGS) -o $@ $^
 
-all: $(SRCS:.c=.sv) sim/Makefile
+$(SIM_BLD)/sim: $(SRCS:.c=.sv) sim/Makefile
 	make -C $(SIM_BLD)
 
 ir : $(SRCS:.c=.ll)
@@ -28,6 +28,10 @@ sim/Makefile:
 	-mkdir $(SIM_BLD)
 	cd $(SIM_BLD) && cmake ../verilator 
 
+sim: $(SIM_BLD)/sim
+	cd $(SIM_BLD) && ./sim +trace
+
+all: sim
 
 clean: 
 	-rm *.ll -rf

@@ -1,7 +1,5 @@
 
-#define LENGTH 4
-
-typedef unsigned char u8;
+#include "shiftreg.h"
 
 int shiftreg(int din)
 {

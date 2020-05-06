@@ -29,6 +29,7 @@ if (NOT verilator_FOUND)
 endif()
 
 # Create a new executable target that will contain all your sources
+include_directories(../)
 add_executable(sim sim_main.cpp ../rgb2yuv.c)
 
 # Add the Verilated circuit to the target

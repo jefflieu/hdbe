@@ -17,7 +17,7 @@ double sc_time_stamp() {
     return main_time;  // Note does conversion to real, to match SystemC
 }
 
-extern "C" int fir(short, short*);
+extern "C" int fir(short din, short*coef);
 
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
@@ -51,40 +51,41 @@ int main(int argc, char** argv, char** env) {
     top->func_clk = 0;
     top->func_start = 0;
     top->din = 1;
-    top->coef[0] = 1;
-    top->coef[1] = 1;
-    top->coef[2] = 1;
-    top->coef[3] = 1;
-    top->coef[4] = 1;
-    top->coef[5] = 1;
-    top->coef[6] = 1;
-    top->coef[7] = 1;
+    short coef[8] = {10, 20, 30, 40, 50, 60, 70, 80};
+    top->coef[0] = coef[0];
+    top->coef[1] = coef[1];
+    top->coef[2] = coef[2];
+    top->coef[3] = coef[3];
+    top->coef[4] = coef[4];
+    top->coef[5] = coef[5];
+    top->coef[6] = coef[6];
+    top->coef[7] = coef[7];
 
-    const int kSAMPLES = 10;
-    int ref[kSAMPLES];
-    int ret[kSAMPLES];
-    int sample;
-   
-    //VL_PRINTF("Expected value %d\n", ref);
+    
+    const int kCALLS         = 10;
+    const int kCLK_PER_CALL  = 1;
+    int calls = 0, returns = 0;
+    int Reference[kCALLS];
+    int Returns[kCALLS];
+    int simErrors = -1;
 
-    // Simulate until $finish
-    sample = 0;
-    //while (!Verilated::gotFinish()) {
-    while (! (top->func_done and sample == kSAMPLES) ) {
+    while (! (top->func_done and returns == kCALLS) ) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
         top->func_clk = main_time & 0x1;
 
         // Toggle control signals on an edge that doesn't correspond
-        // to where the controls are sampled; in this example we do
-        // this only on a negedge of clk, because we know
-        // reset is not sampled there.
-        if (!top->func_clk) {
-            if (main_time == 4) {
-                top->func_start = 1;  // Assert reset
-            }
-	}
+        // to where the controls are sampled
+        if (!top->func_clk && main_time >= 4) {
+            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
+            top->din   = rand();  
+           if (top->func_start)
+            {
+              Reference[calls] = fir(top->din, coef);
+              calls++;
+            } 
+        }
 
         // Evaluate model
         // (If you have multiple models being simulated in the same
@@ -93,8 +94,8 @@ int main(int argc, char** argv, char** env) {
         top->eval();
 
         if (top->func_done && top->func_clk) {
-          ret[sample] = top->func_ret;
-          sample++;
+          Returns[returns] = top->func_ret;
+          returns++;
         }
 
         // Read outputs
@@ -103,6 +104,15 @@ int main(int argc, char** argv, char** env) {
     }
     // Final model cleanup
     top->final();
+
+    //Check
+    simErrors = 0;
+    for(uint32_t chk = 0; chk < kCALLS; chk++)
+    {
+      if (Reference[chk] != Returns[chk]) simErrors++;
+    }
+    VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
+
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
@@ -114,5 +124,5 @@ int main(int argc, char** argv, char** env) {
     delete top; top = NULL;
 
     // Fin
-    exit(0);
+    exit(simErrors);
 }

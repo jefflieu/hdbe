@@ -1,11 +1,6 @@
 
+#include "input_array.h"
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef signed char s8;
-typedef signed short s16;
-
-#define LENGTH 4
 u16 input_array(u16 din[LENGTH])
 {
   u8 i;

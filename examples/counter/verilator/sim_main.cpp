@@ -59,22 +59,19 @@ int main(int argc, char** argv, char** env) {
     int calls = 0, returns = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
-    int simResult = -1;
-   
+    int simErrors = -1;
     //VL_PRINTF("Expected value %d\n", ref);
 
-    while (! (top->func_done and calls == kCALLS) ) {
+    while (! (top->func_done and returns == kCALLS) ) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
         top->func_clk = main_time & 0x1;
 
         // Toggle control signals on an edge that doesn't correspond
-        // to where the controls are sampled; in this example we do
-        // this only on a negedge of clk, because we know
-        // reset is not sampled there.
+        // to where the controls are sampled
         if (!top->func_clk && main_time >= 4) {
-            top->func_start = (main_time >> 1) & kCLK_PER_CALL;  // Assert reset
+            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
             top->ld   = rand() & 1;  
             top->inc  = rand();  
             top->load = rand();  
@@ -90,7 +87,6 @@ int main(int argc, char** argv, char** env) {
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
-        simResult = 0;
         if (top->func_done && top->func_clk) {
           Returns[returns] = top->func_ret;
           returns++;
@@ -104,10 +100,12 @@ int main(int argc, char** argv, char** env) {
     top->final();
 
     //Check
+    simErrors = 0;
     for(uint32_t chk = 0; chk < kCALLS; chk++)
     {
-      if (Reference[chk] != Returns[chk]) simResult++;
+      if (Reference[chk] != Returns[chk]) simErrors++;
     }
+    VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
 
 
     //  Coverage analysis (since test passed)
@@ -120,5 +118,5 @@ int main(int argc, char** argv, char** env) {
     delete top; top = NULL;
 
     // Fin
-    exit(simResult);
+    exit(simErrors);
 }

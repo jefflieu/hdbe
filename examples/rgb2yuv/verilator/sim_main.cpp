@@ -17,15 +17,8 @@ double sc_time_stamp() {
     return main_time;  // Note does conversion to real, to match SystemC
 }
 
+#include "rgb2yuv.h"
 
-typedef unsigned char u8;
-typedef unsigned short u16;
-typedef signed char s8;
-typedef signed short s16;
-typedef unsigned int u32;
-typedef signed int s32;
-
-extern "C" void rgb2yuv(u16* rgb, s16 * coef, s16* yuv);
 
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
@@ -61,51 +54,68 @@ int main(int argc, char** argv, char** env) {
     top->rgb[0] = 123;
     top->rgb[1] = 456;
     top->rgb[2] = 789;
-    top->coef[0] = 1024;
-    top->coef[1] = 0;
-    top->coef[2] = 0;
-    top->coef[3] = 0;
-    top->coef[4] = 1024;
-    top->coef[5] = 0;
-    top->coef[6] = 0;
-    top->coef[7] = 0;
-    top->coef[8] = 1024;
+    s16 coef[9];
+    
+    coef[0] = (0.257*(1<<FRAC));
+    coef[1] = (0.504*(1<<FRAC));
+    coef[2] = (0.098*(1<<FRAC));
+    coef[3] = (-0.148*(1<<FRAC));
+    coef[4] = (-0.291*(1<<FRAC));
+    coef[5] = (0.439*(1<<FRAC));
+    coef[6] = (0.439*(1<<FRAC));
+    coef[7] = (-0.368*(1<<FRAC));
+    coef[8] = (-0.071*(1<<FRAC));
 
-    const int kSAMPLES = 2;
-    int ref[kSAMPLES];
-    int ret[kSAMPLES];
-    int sample;
+    top->coef[0] = coef[0];
+    top->coef[1] = coef[1];
+    top->coef[2] = coef[2];
+    top->coef[3] = coef[3];
+    top->coef[4] = coef[4];
+    top->coef[5] = coef[5];
+    top->coef[6] = coef[6];
+    top->coef[7] = coef[7];
+    top->coef[8] = coef[8];
+  
+    const int kCALLS         = 10;
+    const int kCLK_PER_CALL  = 1;
+    int calls = 0, returns = 0;
+    s16 Reference[kCALLS*3];
+    s16 Returns[kCALLS*3];
+
+    int simErrors = -1;
    
     //VL_PRINTF("Expected value %d\n", ref);
 
-    // Simulate until $finish
-    sample = 0;
-    //while (!Verilated::gotFinish()) {
-    while (! (top->func_done and sample == kSAMPLES) ) {
+    while (! (top->func_done and returns == kCALLS) ) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
         top->func_clk = main_time & 0x1;
 
         // Toggle control signals on an edge that doesn't correspond
-        // to where the controls are sampled; in this example we do
-        // this only on a negedge of clk, because we know
-        // reset is not sampled there.
-        if (!top->func_clk) {
-          if (main_time == 4) {
-            top->func_start = 1;  // Assert reset
-          }
-	      }
+        // to where the controls are sampled
+        if (!top->func_clk && main_time >= 4) {
+            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
+            top->rgb[0]   = rand();
+            top->rgb[1]   = rand();
+            top->rgb[2]   = rand();
+            if (top->func_start)
+            {
+              rgb2yuv(top->rgb, coef, &Reference[calls*3]);
+              calls += 1;
+            } 
+        }
 
         // Evaluate model
         // (If you have multiple models being simulated in the same
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
-
         if (top->func_done && top->func_clk) {
-          ret[sample] = top->func_ret;
-          sample++;
+          Returns[returns*3 + 0] = top->yuv[0];
+          Returns[returns*3 + 1] = top->yuv[1];
+          Returns[returns*3 + 2] = top->yuv[2];
+          returns ++;
         }
 
         // Read outputs
@@ -114,6 +124,14 @@ int main(int argc, char** argv, char** env) {
     }
     // Final model cleanup
     top->final();
+    //Check
+    simErrors = 0;
+    for(uint32_t chk = 0; chk < kCALLS*3; chk++)
+    {
+      if (Reference[chk] != Returns[chk]) simErrors++;
+    }
+    VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
+
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
@@ -125,5 +143,5 @@ int main(int argc, char** argv, char** env) {
     delete top; top = NULL;
 
     // Fin
-    exit(0);
+    exit(simErrors);
 }

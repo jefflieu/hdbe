@@ -1,4 +1,4 @@
-
+`include "Opcodes.sv"
 
 module CastOp #(
  parameter ParamOpCode = "none",
@@ -13,13 +13,13 @@ module CastOp #(
 
 
   generate
-  if (ParamOpCode == "zext") begin 
+  if (ParamOpCode == `OPCODE_ZEXT) begin 
     assign ret = ReturnBitWidth'($unsigned(lhs));
   end
-  else if (ParamOpCode == "sext") begin 
+  else if (ParamOpCode == `OPCODE_SEXT) begin 
     assign ret = ReturnBitWidth'($signed(lhs));
   end 
-  else if (ParamOpCode == "trunc") begin 
+  else if (ParamOpCode == `OPCODE_TRUNC) begin 
     assign ret = ReturnBitWidth'($signed(lhs));
   end
   else begin 

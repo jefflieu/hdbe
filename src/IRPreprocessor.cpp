@@ -28,13 +28,17 @@ void IRPreprocessor::transformNames()
   }
   for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
   {
+    for(Function::iterator B = F->begin(), B_end = F->end(); B != B_end; ++B)
+    {
+      B->setName(makeHdlName(B->getName().str()));
+    }
     for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
     {
-      //Transformname of use 
+      //Transform name of use 
       if (I->getType()->isVoidTy()) continue;
       I->setName(makeHdlName(I->getName().str()));
       LOG_S(IR_PP_DBG) << I->getName() << "\n";
-      
+        
     }
   }
 }

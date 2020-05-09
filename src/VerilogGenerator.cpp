@@ -5,7 +5,7 @@
 #include "IRUtil.hpp"
 
 
-#define VG_DBG 6
+#define VG_DBG 1
 
 using namespace hdbe;
 
@@ -19,7 +19,9 @@ void VerilogGenerator::write()
   auto F         = CDI_h->irFunction;
   String filename = F->getName().str() + ".sv";
   std::ofstream os(filename, std::ofstream::out);  
-  
+
+  LOG_START(VG_DBG);
+
   os << VERILOG_DECL_MODULE(F->getName().str());
 
   writePorts(os);
@@ -47,6 +49,7 @@ void VerilogGenerator::write()
 
 String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
 {   
+    LOG_S(VG_DBG+1) << " Writing declaration : " << obj.name << "\n";
     String decl("None");    
     decl = (obj.property.stype == HdlSignalType::inputType)?"input ":(
               (obj.property.stype == HdlSignalType::outputType)?"output ":""
@@ -54,7 +57,7 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
     String dflt;
     switch (obj.property.vtype)
     {
-      case HdlVectorType::scalarType : if (obj.property.isConstant) dflt += " = " + std::to_string(obj.property.dflt);
+      case HdlVectorType::scalarType : if (obj.property.isConstant) dflt += " = " + std::to_string(obj.property.bitwidth) + "'d" + std::to_string(obj.property.dflt);
                                        if (obj.property.bitwidth > 1) 
                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, (obj.name + tag + dflt));
                                        else 
@@ -73,13 +76,15 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
   auto &variableList = CDI_h->variableList;
   auto &VIM          = CDI_h->valueInfoMap;
   auto &memObjList   = CDI_h->memObjList;
+  LOG_START(VG_DBG);
   for(auto I = variableList.begin(), E = variableList.end(); I!=E; ++I)
   {
     HdlVariable &var = *I;
     //for each signal, get live time 
+    LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
     int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
     int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
-    LOG_S(VG_DBG) << *(var.getIrValue()) << " " << birthTime << " " << liveTime << "\n";
+    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << liveTime << "\n";
     for(uint32_t i = birthTime; i <= liveTime; i++)
       {
         String tag = "_" + std::to_string(i);
@@ -101,7 +106,8 @@ std::ostream& VerilogGenerator::writePorts(std::ostream& os){
   auto &portList = CDI_h->portList;
   auto F         = CDI_h->irFunction;
   
-    
+  LOG_START(VG_DBG);
+  
   //Iterate over analyzer.m_portList;  
   for(auto I = portList.begin(), E = portList.end(); I!=E; ++I)
   {
@@ -120,6 +126,8 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   String assign;
   String ret_state;
   
+  LOG_START(VG_DBG);
+
   os << VERILOG_CODE_SECTION("State sequence");  
   
   for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
@@ -137,7 +145,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
   }
 
   os << declare;
-  os << "assign state_entry0 = func_start" << VERILOG_ENDL;
+  os << VERILOG_ASSIGN_STATEMENT << stateList.front().getName().str() << VERILOG_CONT_ASSIGN << "func_start" << VERILOG_ENDL;
   os << VERILOG_CLKPROCESS_TOP("state_process");
   os << assign;
   os << VERILOG_CLKPROCESS_BOTTOM("state_process");
@@ -174,7 +182,9 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
-  String opcodeString = "\"" + String(I->getOpcodeName()) + "\"";
+  size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
+  // String opcodeString = "\"" + String(I->getOpcodeName()) + pad + "\"";
+  String opcodeString = String(buf, size);
   if (llvm::BinaryOperator::classof(I)) {    
     size = sprintf(buf,"%10sOp #(", "Binary");
     instantiate += String(buf, size);     
@@ -265,6 +275,7 @@ Ostream& VerilogGenerator::writeInputAssignment(Ostream& os)
   for(auto var_i = portList.begin(), var_last = portList.end(); var_i != var_last; ++var_i)
   {    
     if (var_i->property.stype != HdlSignalType::inputType) continue;
+    if (var_i->property.isUnused) continue;
     String tag0 = "_0";
     assign += VERILOG_ASSIGN_STATEMENT + var_i->name + tag0 + VERILOG_CONT_ASSIGN + var_i->name + VERILOG_ENDL;
   } 

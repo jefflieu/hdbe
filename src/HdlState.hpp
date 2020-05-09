@@ -27,7 +27,7 @@ class HdlState : public HdlObject {
     BasicBlock * block = nullptr;        
     int id = 0;
     String name = "state_00";
-    bool is_last;
+    bool is_last = false;
   
   public: 
     HdlState (BasicBlock *bb, int _id) :  block(bb), id(_id) { name = "state_" + block->getName().str() + std::to_string(id);}
@@ -53,6 +53,8 @@ class HdlState : public HdlObject {
       }
       if (termInstruction)
         _log_stdout<<"Terminator : " << (*termInstruction) << "\n";
+      if (is_last)
+        _log_stdout<<"** last state **\n";
     }                     
 };
 

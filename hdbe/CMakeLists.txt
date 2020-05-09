@@ -21,6 +21,9 @@ include_directories(${LLVM_INCLUDE_DIRS} ${dep_root} ${hdlbe_src})
 add_definitions(${LLVM_DEFINITIONS})
 add_definitions(-DLOGURU_WITH_STREAMS=1)
 
+SET(GCC_DBG_FLAGS "-g -rdynamic")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_DBG_FLAGS}")
+
 # Now build our tools
 add_executable(hdbe hdbe.cpp )
 

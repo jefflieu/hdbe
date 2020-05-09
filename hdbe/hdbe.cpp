@@ -27,8 +27,11 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  hdbe::g_verbosity = 0;
+  hdbe::g_verbosity = 2;
   
+  signal(SIGSEGV, segfault_handler);
+  
+
   LOG(INFO, "Program starts .. ");
  
   // Parse the input LLVM IR file into a module.
@@ -58,11 +61,13 @@ int main(int argc, char **argv) {
   InstructionScheduler IS(&CDI);
   IS.schedule();
 
+  CDI.dumpStateList();
+
   /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);
   VGen.write();
 
-  CDI.dumpStateList();
+  
   
   LOG(INFO, "Program ends .. "); 
   return 0;

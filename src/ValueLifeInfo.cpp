@@ -16,5 +16,9 @@ void ValueLifeInfo::addUseTime(HdlState *state, float time) {
     
 //Assuming all are in same block
 int ValueLifeInfo::getLiveTime() {
-  return useTimeList.back().state->id - floor(birthTime.time);
+  LOG_IF_S(WARN, useTimeList.empty()) << irValue->getName() <<  " variable is not used \n";
+  if (useTimeList.empty()) 
+    return 0;
+  else 
+    return useTimeList.back().state->id - floor(birthTime.time);
 }

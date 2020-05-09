@@ -25,8 +25,8 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   auto &variableList  = CDI_h->variableList; 
   auto &memObjList    = CDI_h->memObjList; 
   
-  LOG_S(DA_DBG) << " analyzing \n";     
-    
+  LOG_START(INFO);
+
   //Iterate over argument 
   //For each argument, we generate 2 HdlObjects: 
   //1 HdlPort and and 1 HdlVariable. 
@@ -88,7 +88,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
     LOG_S(DA_DBG + 1) << *(I->getIrValue()) << "\n";
   }*/
   
-  
+  LOG_DONE(INFO);
 }
 
 HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
@@ -132,12 +132,16 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                         break;
                                       }
       default :   
-        LOG_S(ERROR) << "Not supported type at the port" << "\n";
+        LOG_ERROR_S << "Not supported type " << "\n";
+        LOG_ERROR_S << *value << "\n";
+        LOG_ERROR_S << "Type ID " << type_h->getTypeID() << "\n"; 
         break;
     }
+  property.isUnused = value->users().empty();
   LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
   LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
   LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
+  LOG_S(DA_DBG + 2) << " isUnused    : " << property.isUnused << "\n";
   LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 }
@@ -213,12 +217,14 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
     property.bitwidth    = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
     property.arraylength = DL.getPointerSizeInBits();  
   }
-  
+  property.isUnused = valuePointerTy->users().empty();
+
   LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
   LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
   LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
   LOG_S(DA_DBG + 2) << " ReadOnly    : " << readOnly << "\n";
   LOG_S(DA_DBG + 2) << " WriteOnly   : " << writeOnly << "\n";
+  LOG_S(DA_DBG + 2) << " isUnused    : " << property.isUnused << "\n";
   LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 } 
@@ -262,4 +268,20 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
 }
 
 
+void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
+{
+  //Walk the Basicblocks 
+  LOG_START(INFO);
+  std::map<BasicBlock*, float> basicBlockWeight;
+  std::list<BasicBlock*> walkList;
+  for(BasicBlock & bb : irFunction->getBasicBlockList())
+  {
+    _log_stdout << bb.getName() << "\n";
+    basicBlockWeight[&bb] = 0.0;
+  }
+  BasicBlock &entry = irFunction->getEntryBlock();
+
+
+  LOG_DONE(INFO);
+}
 

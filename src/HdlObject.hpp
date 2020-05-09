@@ -3,6 +3,7 @@
 
 #include "llvm/IR/Instruction.h"
 #include "llvm/IR/Value.h"
+#include "llvm/ADT/StringRef.h"
 
 #include "HDLUtil.hpp"
 #include "logging/logger.hpp"
@@ -14,6 +15,7 @@ using Value  = llvm::Value;
 using Instruction = llvm::Instruction;
 using String = std::string;
 using InstrucionList = std::list<Instruction*>;
+using StringRef = llvm::StringRef;
 
 enum class HdlVectorType {scalarType, arrayType, memoryType};
 enum class HdlSignalType {combType, regType, inputType, outputType, inoutType};
@@ -24,6 +26,7 @@ struct HdlProperty {
   int  bitwidth = 0;
   int  arraylength = 0;
   bool isConstant = false;
+  bool isUnused = false;
   int64_t dflt = 0;
 };
 
@@ -44,6 +47,7 @@ class HdlObject {
     }
     
     Value* getIrValue() {return irValue;}
+    StringRef getName() {return StringRef(name);}
     
     ~HdlObject() {};    
 };

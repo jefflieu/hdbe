@@ -29,9 +29,10 @@ void InstructionScheduler::schedule(Function * irFunction)
   auto &stateList      = CDI_h->stateList;
   auto &VIM            = CDI_h->valueInfoMap;
   auto &entryBlock     = *(F.begin());
+  auto &variableList   = CDI_h->variableList;
   
-  LOG(INFO, "Scheduling of function " << F.getName());  
-  
+  LOG_START(INFO);
+  LOG_S(INFO) << irFunction->getName() << "\n"; 
   // Map instructions to SPACE and TIME        
         
     
@@ -57,7 +58,7 @@ void InstructionScheduler::schedule(Function * irFunction)
   //Assign valid_time for constants
 
 
-  LOG(INFO, "Collecting instructions for scheduling");
+  LOG(IS_DBG, "Collecting instructions for scheduling");
   for(auto bb_i = F.begin(), bb_end = F.end(); bb_i != bb_end ; ++bb_i)
   {
       LOG_S(IS_DBG) << " Block : " << bb_i->getName() << "\n";
@@ -91,6 +92,8 @@ void InstructionScheduler::schedule(Function * irFunction)
     
   
     //Scheduling 
+    LOG(IS_DBG, "Start scheduling");
+
     uint32_t step = 0;     
     //For each basic block do until all instructions in that is scheduled 
     while( ! instructions.empty()) 
@@ -154,7 +157,8 @@ void InstructionScheduler::schedule(Function * irFunction)
             
             ret.first->second.setBirthTime(&state, valid_time);
             
-            LOG_S(IS_DBG) << "ok to be scheduled, valid time " << ret.first->second.birthTime.time << "\n";            
+            LOG_S(IS_DBG + 1) << "Instruction: " << *I << "\n"; 
+            LOG_S(IS_DBG + 1) << " --> ok to be scheduled, valid time " << ret.first->second.birthTime.time << "\n";            
             
             //Update usage time 
             //The instruction is scheduled, we update the operands useage 
@@ -189,7 +193,20 @@ void InstructionScheduler::schedule(Function * irFunction)
       {
         map_i->second.setBirthTime(&stateList.front(),0.0);
       } 
+    LOG_S(IS_DBG+1) << *(map_i->first) << " -- " << " Use time list " << map_i->second.useTimeList.size() << " \n"  ;
   }
-  LOG(INFO, "... done ");
+
+  //Remove unused variables 
+  for(auto var = variableList.begin(); var!=variableList.end();)
+  {
+    if (VIM[var->getIrValue()].useTimeList.empty()) {
+      LOG_S(WARN) << "Removing unused variable "<<var->getIrValue()->getName() << "\n";
+      var = variableList.erase(var);
+    } else {
+      ++var;
+    }
+  }
+
+  LOG_DONE(INFO);
 }
 

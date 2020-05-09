@@ -12,6 +12,9 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
   }
   switch(instruction->getOpcode()) 
   {
+    case llvm::Instruction::And    :
+    case llvm::Instruction::Or     :
+    case llvm::Instruction::Xor    : return 0.1;
     case llvm::Instruction::Trunc  :
     case llvm::Instruction::ZExt   :
     case llvm::Instruction::SExt   :

@@ -27,14 +27,16 @@ class HdlState : public HdlObject {
     BasicBlock * block = nullptr;        
     int id = 0;
     String name = "state_00";
+    String empty_name = "";
     bool is_last = false;
   
   public: 
     HdlState (BasicBlock *bb, int _id) :  block(bb), id(_id) { name = "state_" + block->getName().str() + std::to_string(id);}
+    HdlState (int _id) :  block(nullptr), id(_id) { name = "state_" + std::to_string(id);}
     ~HdlState() {}
 
-    StringRef   getbbName() {return block->getName();}
-    String      getbbNameStr() {return block->getName().str();}
+    StringRef   getbbName() {if (block) return block->getName(); else return StringRef(empty_name);}
+    String      getbbNameStr() {if (block) return block->getName().str(); else return String("");}
     StringRef   getName() {return StringRef(name);}
     
     

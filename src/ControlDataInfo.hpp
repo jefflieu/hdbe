@@ -61,6 +61,8 @@ class ControlDataInfo {
       return valueInfoMap.insert(std::pair<Value*, ValueLifeInfo>(val, ValueLifeInfo(val)));
     }
 
+    HdlState& getInstructionState(Instruction* I);
+
     void dumpStateList();
 };
 

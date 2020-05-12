@@ -40,7 +40,17 @@ end //" << __name << "\n"
 #define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))
 
 #define VERILOG_ASSIGN_STATEMENT  "assign "
+#define VERILOG_LOGICAL_AND       " && "
+#define VERILOG_LOGICAL_OR        " || "
+#define VERILOG_LOGICAL_NOT       " !  "
+#define VERILOG_COMPARE_EQUAL     " == "
 #define VERILOG_CONT_ASSIGN       " = "
 #define VERILOG_ASSIGN            " <= "
+#define VERILOG_OUTPUT            "output "
+#define VERILOG_INPUT             "input  "
+#define VERILOG_IF(cond)             "if ( " + cond + " )"
+#define VERILOG_ELSE              " else "
+#define VERILOG_BEGIN             "begin\n"
+#define VERILOG_END               "end\n"
 
 #define VERILOG_CODE_SECTION(a) "\n\n/*\n" a "\n*/\n"

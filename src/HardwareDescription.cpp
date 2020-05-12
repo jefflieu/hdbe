@@ -29,12 +29,15 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
     case llvm::Instruction::Store  : return 1.0;
     case llvm::Instruction::GetElementPtr  : return 0.0;
     case llvm::Instruction::Ret    : return 0.0;
+    case llvm::Instruction::Switch : return 0.0;
+    case llvm::Instruction::Br     : return 0.0;
     default: return 1.0;
   }
 }
 
 float HardwareDescription::getValidTime(llvm::Instruction* instruction, float latest_dependency)
 {
+  float lat = getLatency(instruction);
   if (instruction->isTerminator()) return latest_dependency;
   switch(instruction->getOpcode()) 
   {

@@ -15,7 +15,7 @@ help :
 	cd $* && make -f ../ex.mak
 
 
-$(TEST_ALL) : test_% :  
+$(TEST_ALL) : test_% : % 
 	@echo "Running simulation: " $*
 	cd $*/sim && ./sim +trace
 

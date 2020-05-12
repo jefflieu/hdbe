@@ -1,3 +1,10 @@
+#include "llvm/Analysis/InstructionSimplify.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/IR/ValueHandle.h"
+#include "llvm/Support/BranchProbability.h"
+#include "llvm/Analysis/BranchProbabilityInfo.h"
+#include "llvm/Analysis/BlockFrequencyInfo.h"
+#include "llvm/Analysis/CFG.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/raw_ostream.h"
@@ -51,7 +58,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
     //Filter out memory related operations 
     if (isMemoryInstruction(&*I)) 
-     {
+    {
       //Find the base pointer of the memory instruction and generate and Hdl Object associated with the base Ptr
       int index; //Not used
       Value* val = analyzeMemoryOp(&*I, &index);
@@ -68,10 +75,12 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
         memObj.memInstrList.push_back(&*I);
       }
 
-     }
-
-    for(llvm::Use &use : I->operands()) {
-      llvm::Value* val = use.get();      
+    }
+    //
+    ValuePtrVector depList = getInstructionInputs(&*I);
+    //for(llvm::Use &use : I->operands()) {
+    // llvm::Value* val = use.get();     
+    for(Value* val : depList) {
       if (! isIn(variableList, val) && ! isIn(portList, val) && ! isIn(memObjList, val)) {
         variableList.push_back(HdlVariable((llvm::Value*)val));
         HdlVariable &var = variableList.back();
@@ -107,7 +116,14 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
       property.bitwidth  = 1;
     return property;
   }
-   
+
+  //Special handling of a basicblock 
+  if (BasicBlock::classof(value)) {
+    property.stype = HdlSignalType::regType;
+    property.bitwidth  = 1;
+    return property;
+  }  
+
   switch(type_h->getTypeID()) 
     {
       case llvm::Type::IntegerTyID :  { 
@@ -271,17 +287,48 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
 void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 {
   //Walk the Basicblocks 
+  /*
+  llvm::AnalysisManager<Function> FAM;
+  llvm::LoopAnalysis LA;
+  llvm::LoopInfo LI = LA.run(*irFunction, FAM);
+  llvm::BranchProbabilityAnalysis BPA;
+  BPA.run(*irFunction, FAM);
+  //llvm::BranchProbabilityInfo BPI(*irFunction, LI);
+  //llvm::BlockFrequencyInfo BFI(*irFunction, , LI);
+  */
+
   LOG_START(INFO);
-  std::map<BasicBlock*, float> basicBlockWeight;
+  std::map<BasicBlock*, float> blockFrequency;
   std::list<BasicBlock*> walkList;
   for(BasicBlock & bb : irFunction->getBasicBlockList())
   {
     _log_stdout << bb.getName() << "\n";
-    basicBlockWeight[&bb] = 0.0;
+    blockFrequency[&bb] = 0.0;
   }
   BasicBlock &entry = irFunction->getEntryBlock();
+  blockFrequency[&entry] = 1.0;
+
+  for(BasicBlock & bb : irFunction->getBasicBlockList())
+  {
+    //_log_stdout << bb.getName() << "has " << bb.getNumSuccessors() << " successors\n";
+    //blockFrequency[&bb] = 0.0;
+    _log_stdout << bb.getName() << "has: " << succ_size(&bb) << "successors \n";
+    int succNum = succ_size(&bb);
+    for(BasicBlock* succ : successors(&bb))
+    {
+       _log_stdout << " --> " << succ->getName() << "\n"; 
+       blockFrequency[succ]+=blockFrequency[&bb]/succNum;
+    }
+  }
+
+  for(auto item : blockFrequency)
+  {
+    _log_stdout << item.first->getName() << ":" << item.second << "\n";
+  }
+
 
 
   LOG_DONE(INFO);
 }
+
 

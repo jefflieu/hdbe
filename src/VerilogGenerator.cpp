@@ -484,7 +484,7 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
         String tag0 = "_" + std::to_string(state->id);
         int idx = computeIndex(*instr_i, memObj.getIrValue());
         Value* val = (*instr_i)->getOperand(0);
-        store_assign += "if (" + state->name + ")";
+        store_assign += "if (" + state->name + VERILOG_LOGICAL_AND + (*instr_i)->getParent()->getName().str() + tag0 + ")";
         store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
         if (memObj.property.stype == HdlSignalType::outputType)
           store_assign += "  " + memObj.name + "_valid" + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + state->name + VERILOG_ENDL;

@@ -13,7 +13,9 @@
 #include "DataAnalyzer.hpp"
 #include "IRUtil.hpp"
 
+#ifndef  DA_DBG 
 #define  DA_DBG 1
+#endif 
 
 using namespace hdbe;
 using Function    = llvm::Function;
@@ -298,11 +300,28 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   */
 
   LOG_START(INFO);
-  std::map<BasicBlock*, float> blockFrequency;
-  std::list<BasicBlock*> walkList;
+  
+  //Check that a basic block that has multiple entries must have unconditional branches 
   for(BasicBlock & bb : irFunction->getBasicBlockList())
   {
-    _log_stdout << bb.getName() << "\n";
+    if (pred_size(&bb) > 1)
+      for(BasicBlock* pred : predecessors(&bb))
+      {
+        Instruction* term = pred->getTerminator();
+        LOG_IF_S(FATAL, !term) << "Basic block is not well-formed\n";
+        assert(term);
+        LOG_IF_S(FATAL,!llvm::BranchInst::classof(term)) << "not supported\n";
+        assert(llvm::BranchInst::classof(term));
+        auto brTerm = static_cast<llvm::BranchInst*>(term);
+        LOG_IF_S(FATAL, !brTerm->isUnconditional()) << "not supported\n";
+        assert(brTerm->isUnconditional());
+      }
+  }
+
+  std::map<BasicBlock*, float> blockFrequency;
+  for(BasicBlock & bb : irFunction->getBasicBlockList())
+  {
+    LOG_S(DA_DBG + 1) << bb.getName() << "\n";
     blockFrequency[&bb] = 0.0;
   }
   BasicBlock &entry = irFunction->getEntryBlock();
@@ -312,23 +331,22 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   {
     //_log_stdout << bb.getName() << "has " << bb.getNumSuccessors() << " successors\n";
     //blockFrequency[&bb] = 0.0;
-    _log_stdout << bb.getName() << "has: " << succ_size(&bb) << "successors \n";
+    LOG_S(DA_DBG + 1) << bb.getName() << "has: " << succ_size(&bb) << "successors \n";
     int succNum = succ_size(&bb);
     for(BasicBlock* succ : successors(&bb))
     {
-       _log_stdout << " --> " << succ->getName() << "\n"; 
+       LOG_S(DA_DBG + 2) << " => " << succ->getName() << "\n"; 
        blockFrequency[succ]+=blockFrequency[&bb]/succNum;
     }
   }
 
   for(auto item : blockFrequency)
   {
-    _log_stdout << item.first->getName() << ":" << item.second << "\n";
+    LOG_S(DA_DBG + 1) << item.first->getName() << ":" << item.second << "\n";
   }
-
-
-
+  
   LOG_DONE(INFO);
 }
+
 
 

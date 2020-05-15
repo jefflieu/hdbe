@@ -10,7 +10,9 @@ module icmpOp #(
   input  bit [ParamBitWidth - 1 : 0] rhs,
   output bit ret
 );
- ICMP_EQ    = 32,  ///< equal
+  
+  /*  
+    ICMP_EQ    = 32,  ///< equal
     ICMP_NE    = 33,  ///< not equal
     ICMP_UGT   = 34,  ///< unsigned greater than
     ICMP_UGE   = 35,  ///< unsigned greater or equal
@@ -20,6 +22,7 @@ module icmpOp #(
     ICMP_SGE   = 39,  ///< signed greater or equal
     ICMP_SLT   = 40,  ///< signed less than
     ICMP_SLE   = 41,  ///< signed less or equal
+  */
 generate
   if (ParamOpCode == "eq") begin 
     assign ret = (lhs == rhs)?1'b1:1'b0;

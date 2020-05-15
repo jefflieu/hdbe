@@ -11,11 +11,15 @@
 
 namespace hdbe {
 
-using Module     = llvm::Module;
-using Function   = llvm::Function;
-using BasicBlock = llvm::BasicBlock;
 
 class InstructionScheduler {
+
+  using Module     = llvm::Module;
+  using Function   = llvm::Function;
+  using BasicBlock = llvm::BasicBlock;
+  using Instruction = llvm::Instruction;
+  using Twine       = llvm::Twine;
+  using Value       = llvm::Value;
 
   private: 
     ControlDataInfo *CDI_h;
@@ -26,6 +30,7 @@ class InstructionScheduler {
     void schedule(Function * irFunction);
     void schedule(BasicBlock * irBasicBlock);
     void schedule();
+    void dumpInstructions(std::list<Instruction*> &instList);
 };
 
 }

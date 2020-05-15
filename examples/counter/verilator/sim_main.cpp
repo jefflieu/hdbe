@@ -54,7 +54,7 @@ int main(int argc, char** argv, char** env) {
     top->ld = 0;
     top->load = 20;
 
-    const int kCALLS         = 10;
+    const int kCALLS         = 100;
     const int kCLK_PER_CALL  = 1;
     int calls = 0, returns = 0;
     int Reference[kCALLS];

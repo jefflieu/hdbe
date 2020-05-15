@@ -52,8 +52,9 @@ class VerilogGenerator : public CodeGenerator {
     std::ostream& writeCtrlFlow(std::ostream& os );
     String writeHdlObjDeclaration(HdlObject& obj, String tag);
     String writeSimpleInstruction(llvm::Instruction* I);
+    String writePHIInstruction(llvm::Instruction* I);
     //String writeCtrlFlowInstruction(llvm::Instruction* I);
-    String writeControlActiveCondition(llvm::Instruction* I, llvm::BasicBlock *bb);
+    String writeControlActiveCondition(llvm::Instruction* I, llvm::BasicBlock *bb, int id);
     Ostream& writeRegisterStages(Ostream& os);
     Ostream& writeInputAssignment(Ostream& os);
     Ostream& writeReturnStatement(Ostream& os);

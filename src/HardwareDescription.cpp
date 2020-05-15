@@ -5,7 +5,6 @@ using namespace hdbe;
 
 float HardwareDescription::getLatency(llvm::Instruction* instruction)
 {
-  if (instruction->isTerminator()) return 0.0;
   if (isMemoryInstruction(instruction)) {
 
 
@@ -31,6 +30,7 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
     case llvm::Instruction::Ret    : return 0.0;
     case llvm::Instruction::Switch : return 0.0;
     case llvm::Instruction::Br     : return 0.0;
+    case llvm::Instruction::PHI    : return 0.5;
     default: return 1.0;
   }
 }
@@ -38,9 +38,11 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
 float HardwareDescription::getValidTime(llvm::Instruction* instruction, float latest_dependency)
 {
   float lat = getLatency(instruction);
-  if (instruction->isTerminator()) return latest_dependency;
   switch(instruction->getOpcode()) 
   {
+    case llvm::Instruction::Ret    :
+    case llvm::Instruction::Switch :
+    case llvm::Instruction::Br     : return (latest_dependency + lat);
     case llvm::Instruction::Store  : return ceil(latest_dependency + 0.001);
     default: return latest_dependency + getLatency(instruction);
   }

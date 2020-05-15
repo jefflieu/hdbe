@@ -182,7 +182,8 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
       //LOG(INFO, *(var_i->getIrValue()));
       auto instr = static_cast<Instruction*>(var_i->getIrValue());
       if (isMemoryInstruction(instr)) {
-     
+      } else if (isPHIInstruction(instr)) {
+        os << writePHIInstruction(instr);
       } else {
         os << writeSimpleInstruction(instr);      
       }
@@ -216,7 +217,7 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
       {
         assert(Instruction::classof(user));
         statement += ((first)?" ":"|");
-        statement += writeControlActiveCondition(static_cast<Instruction*>(user), &bb);
+        statement += writeControlActiveCondition(static_cast<Instruction*>(user), &bb, state.id);
         first = false;
       }
       statement += VERILOG_ENDL;
@@ -227,13 +228,13 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
   return os;
 }
 
-String VerilogGenerator::writeControlActiveCondition(llvm::Instruction* I, llvm::BasicBlock *bb)
+String VerilogGenerator::writeControlActiveCondition(llvm::Instruction* I, llvm::BasicBlock *bb, int id)
 {
   String condition;
   char buf[256];
   unsigned size = 0;
   HdlState& state = CDI_h->getInstructionState(I);
-  String tag = "_" + std::to_string(state.id);
+  String tag = "_" + std::to_string(id);
   String defltCondition("!(");
   if (I->getOpcode() == llvm::Instruction::Switch) {    
     //Search for the basic block
@@ -262,28 +263,64 @@ String VerilogGenerator::writeControlActiveCondition(llvm::Instruction* I, llvm:
   else return defltCondition;
 }
 
-// String VerilogGenerator::writeCtrlFlowInstruction(llvm::Instruction* I)
-// {
-//   String instantiate;
-//   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
-//   char buf[256];
-//   unsigned size = 0;
-//   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
-//   String tag = "_" + std::to_string(state.id);
-//   String concat("!(");
-//   if (I->getOpcode() == llvm::Instruction::Switch) {    
-//     for(int i = 2; i < I->getNumOperands(); i+=2) {
-//       instantiate += VERILOG_ASSIGN_STATEMENT + getValueHdlName(I->getOperand(i+1)) + tag + 
-//             VERILOG_CONT_ASSIGN + getValueHdlName(I->getOperand(0)) + tag + VERILOG_COMPARE_EQUAL + getValueHdlName(I->getOperand(i)) + tag 
-//             + VERILOG_LOGICAL_AND + getValueHdlName(I->getParent()) + tag + VERILOG_ENDL;
-      
-//       concat += getValueHdlName(I->getOperand(i+1)) + tag + ((i+2<I->getNumOperands() )?String("|"):String(")"));
-//       }
-//     instantiate += VERILOG_ASSIGN_STATEMENT + getValueHdlName(I->getOperand(1)) + tag + VERILOG_CONT_ASSIGN  + concat +  + VERILOG_ENDL;
+String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
+{
+  String space(50, ' ');
+  String instantiate;
+  std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
+  char buf[256];
+  unsigned size = 0;
+  HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
+  size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
+  String opcodeString = String(buf, size);
 
-//   }
-//   return instantiate;
-// }
+  LOG_IF_S(ERROR, ! llvm::PHINode::classof(I)) << "Error, instruction is not PhiNode\n";
+  LOG_IF_S(ERROR, ! I->getType()->isIntegerTy()) << "Error, PHINode is not integer type\n";
+  assert (llvm::PHINode::classof(I));    
+  assert (I->getType()->isIntegerTy());
+
+  auto phi = static_cast<llvm::PHINode*>(I);
+  auto N = phi->getNumIncomingValues();
+
+  size = sprintf(buf,"%10sOp #(", "PHINode");
+  instantiate += String(buf, size);     
+  size = sprintf(buf,"%10d,", static_cast<llvm::PHINode*>(I)->getNumIncomingValues());
+  instantiate += String(buf, size); 
+  size = sprintf(buf,"%6d)", phi->getType()->getIntegerBitWidth());
+  instantiate += String(buf, size);
+
+  size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(I));
+  instantiate += String(buf, size);
+  size = sprintf(buf,"func_clk, ");
+  instantiate += String(buf, size);   
+  size = sprintf(buf,"%s, ", state.getName().data());
+  instantiate += String(buf, size);
+  
+  String tag = "_" + std::to_string(state.id);
+
+  size = sprintf(buf,"%s%s%s,\n", space.data(), I->getName().data(), &tag[0]);  
+  instantiate += String(buf, size); 
+  for(int i = 0; i < 16; i++)
+  {
+    if (i < N) {
+      llvm::BasicBlock* blk = phi->getIncomingBlock(i);
+      llvm::Value* val = phi->getIncomingValue(i);
+      String blkName = getValueHdlName(blk) + tag;
+      String valName = getValueHdlName(val) + tag;
+      size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), blkName.data(), valName.data());
+      instantiate += String(buf, size);
+    } else {
+      size = sprintf(buf, "%s 0", space.data());
+      instantiate += String(buf, size);
+    }
+    if (i != 15) instantiate += ",\n"; else instantiate += ");\n"; 
+
+  }
+
+
+  
+  return instantiate;  
+} 
 
 String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
 {

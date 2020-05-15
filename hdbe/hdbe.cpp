@@ -51,7 +51,7 @@ int main(int argc, char **argv) {
 
   /// Preprocessing the IR data structure
   IRPreprocessor IRPrep(Mod.get(), funcName);
-  IRPrep.transformNames();
+  IRPrep.run();
 
   /// Perform data analysis
   DataAnalyzer DAnalyzer(&CDI);

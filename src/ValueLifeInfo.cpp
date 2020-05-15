@@ -5,7 +5,10 @@ using namespace hdbe;
 
 void ValueLifeInfo::setBirthTime(HdlState *state, float time) {
   birthTime.state = state; 
-  birthTime.time  = time;
+  if (time >= birthTime.time)
+    birthTime.time  = time;
+  else 
+    LOG_S(WARN) << *(this->irValue) << ": new birth time is smaller than current value, not updated\n";
 };
 
     

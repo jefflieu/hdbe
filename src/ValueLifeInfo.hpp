@@ -20,8 +20,8 @@ using BasicBlock = llvm::BasicBlock;
 namespace hdbe {
 class ValueLifeInfo {
   struct TimePoint {    
-    HdlState * state;
-    float      time;
+    HdlState * state = nullptr;
+    float      time = 0;
   };
 
   using UseTimeListType = std::vector<TimePoint>;

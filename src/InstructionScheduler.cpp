@@ -5,15 +5,13 @@
 #include "logging/logger.hpp"
 #include "InstructionScheduler.hpp"
 
+#ifndef  IS_DBG 
 #define  IS_DBG 1
+#endif  
 
 using namespace std;
 using namespace hdbe;
-using Twine       = llvm::Twine;
-using Value       = llvm::Value;
-using Instruction = llvm::Instruction;
-using Function    = llvm::Function;
-using Module      = llvm::Module;
+
 
 void InstructionScheduler::schedule(BasicBlock * irBasicBlock){};
 
@@ -64,22 +62,25 @@ void InstructionScheduler::schedule(Function * irFunction)
 
   LOG(IS_DBG, "Collecting instructions for scheduling");
   std::list<Instruction * > instructions;                      
+  std::map<BasicBlock *, int > bbInstrCountMap;                      
 
   for(auto bb_i = F.begin(), bb_end = F.end(); bb_i != bb_end ; ++bb_i)
   {
     LOG_S(IS_DBG) << " Block : " << bb_i->getName() << "\n";
-    
+    bbInstrCountMap[&*bb_i] = 0;
     /// Collecting all instructions in the basic block 
     for(auto ins_i = bb_i->begin(), ins_end = bb_i->end(); ins_i != ins_end; ++ ins_i)
     {
       //Only handle 1 return instruction
-      if (! isUselessInstruction(&*ins_i) )
+      if (! isUselessInstruction(&*ins_i) ) {
         instructions.push_back(&*ins_i);
+        bbInstrCountMap[&*bb_i]++;
+      }
       
       //Update name
-      if (ins_i->getName().empty() && !ins_i->getType()->isVoidTy()) {
-        ins_i->setName(Twine('s') + Twine::utohexstr(reinterpret_cast<intptr_t>(&*ins_i)));
-      }        
+      //if (ins_i->getName().empty() && !ins_i->getType()->isVoidTy()) {
+      //  ins_i->setName(Twine('s') + Twine::utohexstr(reinterpret_cast<intptr_t>(&*ins_i)));
+      //}        
       
       LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";   
       
@@ -134,9 +135,17 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       LOG_S(IS_DBG + 1) << "Timing info: " << dependency_valid << " " << valid_time << "\n";
 
+      //Branch Instruction has to be the last one
+      bool branchInstrCheck = true;
+      if (I->getOpcode() == llvm::Instruction::Ret || 
+            I->getOpcode() == llvm::Instruction::Br  || 
+              I->getOpcode() == llvm::Instruction::Switch) {
+        branchInstrCheck = (bbInstrCountMap[I->getParent()] == 1);
+        LOG_S(IS_DBG + 1) << "Checking branch instruction " << branchInstrCheck << "\n";
+      }
 
-          //Ok to be schedule 
-      if (valid_time < (step + 1.0) || (latency >= 1.0 && dependency_valid <(step+1.0))) {
+      //Ok to be schedule 
+      if ((valid_time < (step + 1.0) || (latency >= 1.0 && dependency_valid <(step+1.0))) && branchInstrCheck) {
 
         if (I->getOpcode()==llvm::Instruction::Ret)
           state.termInstruction = I;
@@ -161,6 +170,9 @@ void InstructionScheduler::schedule(Function * irFunction)
           //Finally erase the item 
         list_i = instructions.erase(list_i);
 
+        bbInstrCountMap[I->getParent()]--;
+
+
       } else {
 
         ++ list_i;
@@ -170,6 +182,8 @@ void InstructionScheduler::schedule(Function * irFunction)
     }   
     step ++ ; 
       //For debugging
+    if (step >= 20) dumpInstructions(instructions);
+    
     ASSERT(step < 20, "Something wrong in scheduling process") ;
   }
   stateList.back().isLast(true);
@@ -197,5 +211,26 @@ void InstructionScheduler::schedule(Function * irFunction)
   }
 
   LOG_DONE(INFO);
+}
+
+void InstructionScheduler::dumpInstructions(std::list<Instruction*> &instList)
+{
+  auto &VIM = CDI_h->valueInfoMap;
+  for(auto I : instList)
+  {
+    LOG_S(IS_DBG) << *I << "\n";
+    auto usedValues = getInstructionInputs(I);
+    LOG_S(IS_DBG) << "Dependency:\n";
+    for(auto val : usedValues)
+    {
+      LOG_S(IS_DBG + 1) << *val << "\n";
+      if (VIM.count(val) == 0) {        
+        LOG_S(IS_DBG + 1) << "Not found \n"; 
+        break;
+      }
+      float operand_valid = VIM[val].birthTime.time;
+      LOG_S(IS_DBG + 1) << "Valid time: " << operand_valid << "\n";
+    }
+  }
 }
 

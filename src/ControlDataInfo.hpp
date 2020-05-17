@@ -2,6 +2,8 @@
 
 #include <typeinfo> 
 
+#include "llvm/ADT/Hashing.h"
+#include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
@@ -15,6 +17,8 @@
 
 namespace hdbe {
 
+using CFGEdgeVector = llvm::SmallVector<HdlCFGEdge*, 16>;
+
 /// This class holds all the results performed by other blocks such as DataAnalyzer, InstructionScheduler ..
 /// The results are stored in various lists which serve the ultimate goal of creating HDL description of the IR
 class ControlDataInfo {
@@ -24,7 +28,8 @@ class ControlDataInfo {
   using Function    = llvm::Function;
   using Instruction = llvm::Instruction;
   using Value       = llvm::Value;
-
+  using BasicBlock  = llvm::BasicBlock;
+  using Hashcode    = llvm::hash_code;
 
   friend class DataAnalyzer;
   friend class VerilogGenerator;
@@ -41,6 +46,7 @@ class ControlDataInfo {
     std::list<HdlMemory   > memObjList;
     std::list<HdlState    > stateList;    
     std::list<HdlCFGEdge  > transitionList;    
+    std::map<Hashcode, HdlCFGEdge*> edgeMap;    
     std::map<Value*, ValueLifeInfo> valueInfoMap;
 
     HardwareDescription     HWD;
@@ -61,7 +67,10 @@ class ControlDataInfo {
       return valueInfoMap.insert(std::pair<Value*, ValueLifeInfo>(val, ValueLifeInfo(val)));
     }
 
-    HdlState& getInstructionState(Instruction* I);
+    HdlState&   getInstructionState(Instruction* I);
+    HdlCFGEdge& findCFGEdge(BasicBlock* src, BasicBlock* dst);
+    CFGEdgeVector findAllCFGEdges(BasicBlock* src, BasicBlock* dst);
+    void        addCFGEdge(HdlCFGEdge& edge);
 
     void dumpStateList();
     void dumpValueInfoMap();

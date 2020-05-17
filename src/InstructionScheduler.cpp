@@ -21,6 +21,10 @@ void InstructionScheduler::schedule() {
 
 void InstructionScheduler::schedule(Function * irFunction) 
 {
+  /* 
+    Map instructions to SPACE and TIME        
+  */
+
   auto &M              = *(CDI_h->irModule);
   auto &F              = *irFunction;
   auto &HWD            = CDI_h->HWD;
@@ -31,12 +35,9 @@ void InstructionScheduler::schedule(Function * irFunction)
   
   LOG_START(INFO);
   LOG_S(INFO) << irFunction->getName() << "\n"; 
-  // Map instructions to SPACE and TIME        
         
     
   LOG_S(IS_DBG) << "Assigning birth time to global variables and arguments \n";      
-  
-  
   //Assign birth time for Global Variable 
   for(auto gv_i = M.global_begin(), gv_end = M.global_end(); gv_i != gv_end; ++gv_i)
     {
@@ -57,8 +58,6 @@ void InstructionScheduler::schedule(Function * irFunction)
   auto entryBlkInfo = CDI_h->addValueInfo(&entryBlock);
   entryBlkInfo.first->second.setBirthTime(nullptr, 0.0);  
 
-  //Assign valid_time for constants
-
 
   LOG(IS_DBG, "Collecting instructions for scheduling");
   std::list<Instruction * > instructions;                      
@@ -68,20 +67,13 @@ void InstructionScheduler::schedule(Function * irFunction)
   {
     LOG_S(IS_DBG) << " Block : " << bb_i->getName() << "\n";
     bbInstrCountMap[&*bb_i] = 0;
-    /// Collecting all instructions in the basic block 
+    
+    // Collecting all instructions in the basic block 
     for(auto ins_i = bb_i->begin(), ins_end = bb_i->end(); ins_i != ins_end; ++ ins_i)
     {
-      //Only handle 1 return instruction
-      if (! isUselessInstruction(&*ins_i) ) {
-        instructions.push_back(&*ins_i);
-        bbInstrCountMap[&*bb_i]++;
-      }
-      
-      //Update name
-      //if (ins_i->getName().empty() && !ins_i->getType()->isVoidTy()) {
-      //  ins_i->setName(Twine('s') + Twine::utohexstr(reinterpret_cast<intptr_t>(&*ins_i)));
-      //}        
-      
+
+      instructions.push_back(&*ins_i);
+      bbInstrCountMap[&*bb_i]++;      
       LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";   
       
       //Assigning Valid time for constants
@@ -101,15 +93,22 @@ void InstructionScheduler::schedule(Function * irFunction)
   LOG(IS_DBG, "Start scheduling");
 
   uint32_t step = 0;     
-    //For each basic block do until all instructions in that is scheduled 
+  
+  //Keep doing the scheduling until the list of instructions is empty
   while( ! instructions.empty()) 
   {
-    //stateList.push_back(HdlState(&irFunction->getEntryBlock(), step));
+    //Everytime we are here, we add a new time step
     stateList.push_back(HdlState(step));
     HdlState & state  = stateList.back(); 
 
-      //Iterate the list and see if the instruction can be scheduled  
-      //Instruction can be scheduled when all the operands are valid 
+    /* 
+      Iterate the list and see if the instruction can be scheduled  
+      Instruction can be scheduled when all the inputs are valid 
+      Note that the inputs of an instruction is a little more than the number of operands
+      For the purpose of generating the HDL, the control information (the basicblock) is part of the input 
+      The basicblock itself is the OUTPUT of a branch instruction, not the input
+      We change the interpretation of inputs/outputs a bit to suit our purpose 
+    */
     for (auto list_i = instructions.begin(), list_end = instructions.end(); list_i != list_end;)
     {
       Instruction* I = *list_i;

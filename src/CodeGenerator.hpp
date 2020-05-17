@@ -35,7 +35,7 @@ class CodeGenerator {
 };
 
 class VerilogGenerator : public CodeGenerator {
-  
+    
   public: 
     VerilogGenerator() {};
     VerilogGenerator(ControlDataInfo *_CDI_h) : CodeGenerator(_CDI_h) {}

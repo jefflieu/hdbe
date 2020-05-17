@@ -338,9 +338,10 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
     if (i < N) {
       llvm::BasicBlock* blk = phi->getIncomingBlock(i);
       llvm::Value* val = phi->getIncomingValue(i);
-      String blkName = getValueHdlName(blk) + tag;
+      HdlCFGEdge& edge = CDI_h->findCFGEdge(blk, phi->getParent());
+      String edgeName = edge.getName().str() + tag;
       String valName = getValueHdlName(val) + tag;
-      size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), blkName.data(), valName.data());
+      size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), edgeName.data(), valName.data());
       instantiate += String(buf, size);
     } else if (i == N) {
       size = sprintf(buf, "%s ", space.data());
@@ -429,6 +430,7 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
   String assign;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlVariable>& variableList       = CDI_h->variableList;
+  std::list<HdlCFGEdge >& transitionList     = CDI_h->transitionList;
 
   os << VERILOG_CODE_SECTION("Register stages for pipelining");
   for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
@@ -443,7 +445,22 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
         assign += var_i->name + tag1 + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
       
     }
-  } 
+  }
+
+ assign += String(VERILOG_COMMENT) + String("Transitions pipeline\n");
+ for(auto var_i = transitionList.begin(), var_last = transitionList.end(); var_i != var_last; ++var_i)
+  {
+    //for each signal, get live time     
+    int birthTime = floor(VIM[var_i->getIrValue()].birthTime.time);
+    int useTime   = floor(VIM[var_i->getDestBB()].birthTime.time);    
+    for(uint32_t i = birthTime + 1; i <= useTime; i++)
+      {
+        String tag1 = "_" + std::to_string(i);
+        String tag0 = "_" + std::to_string(i-1);
+        assign += var_i->name + tag1 + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
+      }
+  }
+
   os << VERILOG_CLKPROCESS_TOP("register_stage");
   os << assign;
   os << VERILOG_CLKPROCESS_BOTTOM("register_stage");

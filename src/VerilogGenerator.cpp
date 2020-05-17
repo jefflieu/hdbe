@@ -4,8 +4,9 @@
 #include "logging/logger.hpp"
 #include "IRUtil.hpp"
 
-
-#define VG_DBG 1
+#ifndef VG_DBG 
+#define VG_DBG 9
+#endif 
 
 using namespace hdbe;
 
@@ -87,9 +88,10 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
 
 std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
 {  
-  auto &variableList = CDI_h->variableList;
-  auto &VIM          = CDI_h->valueInfoMap;
-  auto &memObjList   = CDI_h->memObjList;
+  auto &variableList    = CDI_h->variableList;
+  auto &VIM             = CDI_h->valueInfoMap;
+  auto &memObjList      = CDI_h->memObjList;
+  auto &transitionList  = CDI_h->transitionList;
   LOG_START(VG_DBG);
   for(auto I = variableList.begin(), E = variableList.end(); I!=E; ++I)
   {
@@ -112,6 +114,21 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     //for each signal, get live time
     if (var.property.stype == HdlSignalType::regType)
       os << writeHdlObjDeclaration(var, "");      
+  }
+
+  for(auto E = transitionList.begin(); E != transitionList.end(); ++E)
+  {
+    HdlCFGEdge &var = *E;
+    //for each signal, get live time 
+    LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
+    int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
+    int useTime   = floor(VIM[var.getDestBB()].birthTime.time);
+    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << useTime << "\n";
+    for(uint32_t i = birthTime; i <= useTime; i++)
+      {
+        String tag = "_" + std::to_string(i);
+        os << writeHdlObjDeclaration(var, tag);
+      }
   }
 }
 
@@ -195,35 +212,77 @@ std::ostream& VerilogGenerator::writeInstructions(std::ostream& os){
 
 std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
 {
-  auto F = CDI_h->irFunction;
+  auto F  = CDI_h->irFunction;
+  auto TL = CDI_h->transitionList;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
-
+  String statement;
   LOG_START(VG_DBG);
+  os << VERILOG_CODE_SECTION("Control flow");
+  statement = String("//Transition conditions\n");
+  for(auto E : TL)
+  {
+    //For each transition edge we write the valid condition of it 
+    HdlState& state = *(VIM[static_cast<Value*>(E.getIrValue())].birthTime.state);
+    String tag = "_" + std::to_string(state.id);
+    statement += VERILOG_ASSIGN_STATEMENT + E.getName().str() + tag + VERILOG_CONT_ASSIGN; 
+    statement += writeControlActiveCondition(static_cast<Instruction*>(E.getIrValue()), E.getDestBB(), state.id);
+    statement += VERILOG_ENDL;
+  }
+
+  statement += "//Basicblock valid conditions\n";
+  
   for(auto bb_iter = F->begin(), bb_end = F->end(); bb_iter != bb_end; bb_iter ++ )
   {
     BasicBlock& bb = *bb_iter;
     HdlState& state = *(VIM[static_cast<Value*>(&bb)].birthTime.state);
     String tag = "_" + std::to_string(state.id);
-
-    //Find out who is using 
-    bool first = true;
-    String statement = VERILOG_ASSIGN_STATEMENT + bb.getName().str() + tag + VERILOG_CONT_ASSIGN; 
-
+    statement += VERILOG_ASSIGN_STATEMENT + bb.getName().str() + tag + VERILOG_CONT_ASSIGN; 
     if (bb.hasNPredecessors(0))
     {
       statement += String("func_start") + String(VERILOG_ENDL);
-    } else { 
-      for(User* user : bb.users())
+    } else {
+      int cnt = 0;
+      for(auto E : TL)
       {
-        assert(Instruction::classof(user));
-        statement += ((first)?" ":"|");
-        statement += writeControlActiveCondition(static_cast<Instruction*>(user), &bb, state.id);
-        first = false;
+        if (E.getDestBB() == &bb)
+        {
+           statement += ((cnt == 0)?" ":"|");
+           statement += E.getName().str() + tag;
+           cnt ++;
+        }
       }
       statement += VERILOG_ENDL;
     }
-    os << statement;
+
   }
+  os << statement;
+
+
+  // for(auto bb_iter = F->begin(), bb_end = F->end(); bb_iter != bb_end; bb_iter ++ )
+  // {
+  //   BasicBlock& bb = *bb_iter;
+  //   HdlState& state = *(VIM[static_cast<Value*>(&bb)].birthTime.state);
+  //   String tag = "_" + std::to_string(state.id);
+
+  //   //Find out who is using 
+  //   bool first = true;
+  //   String statement = VERILOG_ASSIGN_STATEMENT + bb.getName().str() + tag + VERILOG_CONT_ASSIGN; 
+
+  //   if (bb.hasNPredecessors(0))
+  //   {
+  //     statement += String("func_start") + String(VERILOG_ENDL);
+  //   } else { 
+  //     for(User* user : bb.users())
+  //     {
+  //       assert(Instruction::classof(user));
+  //       statement += ((first)?" ":"|");
+  //       statement += writeControlActiveCondition(static_cast<Instruction*>(user), &bb, state.id);
+  //       first = false;
+  //     }
+  //     statement += VERILOG_ENDL;
+  //   }
+  //   os << statement;
+  // }
   LOG_DONE(VG_DBG);
   return os;
 }
@@ -244,8 +303,9 @@ String VerilogGenerator::writeControlActiveCondition(llvm::Instruction* I, llvm:
       
       if(bb == I->getOperand(i+1))
         condition += cond; 
-      defltCondition += cond + ((i+2<I->getNumOperands() )?String("|"):String(")"));
+      defltCondition += cond + ((i+2<I->getNumOperands() )?String("|"):String(")"));    
     }
+    defltCondition += VERILOG_LOGICAL_AND + getValueHdlName(I->getParent()) + tag ;
   } else if (I->getOpcode() == llvm::Instruction::Br) {
     if (static_cast<llvm::BranchInst*>(I)->isConditional())
     {
@@ -293,7 +353,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
   instantiate += String(buf, size);
   size = sprintf(buf,"func_clk, ");
   instantiate += String(buf, size);   
-  size = sprintf(buf,"%s, ", state.getName().data());
+  size = sprintf(buf,"%s,\n", state.getName().data());
   instantiate += String(buf, size);
   
   String tag = "_" + std::to_string(state.id);
@@ -309,11 +369,14 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
       String valName = getValueHdlName(val) + tag;
       size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), blkName.data(), valName.data());
       instantiate += String(buf, size);
-    } else {
-      size = sprintf(buf, "%s 0", space.data());
+    } else if (i == N) {
+      size = sprintf(buf, "%s ", space.data());
       instantiate += String(buf, size);
+    } else {
+      instantiate += String("0");
     }
-    if (i != 15) instantiate += ",\n"; else instantiate += ");\n"; 
+    if (i < N) instantiate += ",\n"; else 
+    if (i < 15) instantiate += ","; else instantiate += ");\n"; 
 
   }
 
@@ -329,6 +392,7 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
+  float valid_time = VIM[static_cast<Value*>(I)].birthTime.time;
   size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
   // String opcodeString = "\"" + String(I->getOpcodeName()) + pad + "\"";
   String opcodeString = String(buf, size);
@@ -369,7 +433,7 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
     //instantiate += String(buf, size); 
   }  
   size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(I));
-  instantiate += String(buf, size);
+  instantiate += String(buf, size); 
   size = sprintf(buf,"func_clk, ");
   instantiate += String(buf, size);   
   size = sprintf(buf,"%s, ", state.getName().data());
@@ -383,7 +447,8 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
       instantiate += String(buf, size); 
     }
 
-  size = sprintf(buf,"%s%s );\n", I->getName().data(), &tag[0]);  
+  String valid_tag = "_" + std::to_string(static_cast<int>(valid_time));
+  size = sprintf(buf,"%s%s );\n", I->getName().data(), &valid_tag[0]);  
   instantiate += String(buf, size);   
   return instantiate;  
 };

@@ -74,9 +74,9 @@ int main(int argc, char** argv, char** env) {
         if (!top->func_clk && main_time >= 4) {
             top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
             top->op   = rand() % 5;  
-            top->a    = rand();  
-            top->b    = rand();  
-            top->c    = rand();  
+            top->a    = rand() & 0xffff;  
+            top->b    = rand() & 0xffff;  
+            top->c    = rand() & 0xffff;  
             if (top->func_start)
             {
               Reference[calls] = ctrlflow(top->op, top->a, top->b, top->c);
@@ -108,7 +108,13 @@ int main(int argc, char** argv, char** env) {
       if (Reference[chk] != Returns[chk]) simErrors++;
     }
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
-
+    if (simErrors>0)
+    {
+      for(uint32_t r = 0; r < kCALLS; r++)
+      {
+        VL_PRINTF("Expected %+012d, returned %+012d  %3s\n", Reference[r], Returns[r], (Reference[r]==Returns[r])?"OK":"BAD" );
+      }
+    }
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE

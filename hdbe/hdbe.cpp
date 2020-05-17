@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
     return 1;
   }
   
-  hdbe::g_verbosity = 2;
+  hdbe::g_verbosity = 3;
   
   signal(SIGSEGV, segfault_handler);
   
@@ -62,6 +62,7 @@ int main(int argc, char **argv) {
   IS.schedule();
 
   CDI.dumpStateList();
+  CDI.dumpValueInfoMap();
 
   /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);

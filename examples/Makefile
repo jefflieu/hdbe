@@ -1,6 +1,6 @@
 
 
-EXAMPLES  :=counter fir shiftreg input_array rgb2yuv
+EXAMPLES  :=counter fir shiftreg input_array rgb2yuv ctrlflow
 VCD_FILE  :=sim/logs/vlt_dump.vcd
 CLEAN_ALL := $(foreach ex, $(EXAMPLES), clean_$(ex))
 TEST_ALL  := $(foreach ex, $(EXAMPLES), test_$(ex))
@@ -28,6 +28,6 @@ $(CLEAN_ALL) : clean_% :
 
 all: $(EXAMPLES)
 
-test_all: $(TEST_ALL)
+test-all: $(TEST_ALL)
 
-clean_all: $(CLEAN_ALL)
+clean-all: $(CLEAN_ALL)

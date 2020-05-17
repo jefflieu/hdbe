@@ -6,7 +6,7 @@
 #include "InstructionScheduler.hpp"
 
 #ifndef  IS_DBG 
-#define  IS_DBG 1
+#define  IS_DBG 9
 #endif  
 
 using namespace std;
@@ -133,7 +133,7 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       float valid_time = HWD.getValidTime(I, dependency_valid);
 
-      LOG_S(IS_DBG + 1) << "Timing info: " << dependency_valid << " " << valid_time << "\n";
+      LOG_S(IS_DBG + 1) << "Dependency valid time: " << dependency_valid << ", value valid time: " << valid_time << "\n";
 
       //Branch Instruction has to be the last one
       bool branchInstrCheck = true;
@@ -208,6 +208,12 @@ void InstructionScheduler::schedule(Function * irFunction)
     } else {
       ++var;
     }
+  }
+
+  //Update Transition List: 
+  for(auto edge : CDI_h->transitionList)
+  {
+    
   }
 
   LOG_DONE(INFO);

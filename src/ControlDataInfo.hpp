@@ -41,6 +41,7 @@ class ControlDataInfo {
     std::list<HdlVariable > variableList;
     std::list<HdlMemory   > memObjList;
     std::list<HdlState    > stateList;    
+    std::list<HdlCFGEdge  > transitionList;    
     std::map<Value*, ValueLifeInfo> valueInfoMap;
 
     HardwareDescription     HWD;
@@ -64,6 +65,7 @@ class ControlDataInfo {
     HdlState& getInstructionState(Instruction* I);
 
     void dumpStateList();
+    void dumpValueInfoMap();
 };
 
 

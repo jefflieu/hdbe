@@ -16,6 +16,7 @@ using Instruction = llvm::Instruction;
 using String = std::string;
 using InstrucionList = std::list<Instruction*>;
 using StringRef = llvm::StringRef;
+using BasicBlock = llvm::BasicBlock;
 
 enum class HdlVectorType {scalarType, arrayType, memoryType};
 enum class HdlSignalType {combType, regType, inputType, outputType, inoutType};
@@ -81,5 +82,19 @@ class HdlMemory : public HdlObject {
     InstrucionList memInstrList;
  
 };
+
+class HdlCFGEdge : public HdlObject {
+  int successorId = 0; //Operand in the branch operation. 
+  bool isBackEdge = false;  
+  public: 
+    HdlCFGEdge(String name) : HdlObject(name) {};
+    HdlCFGEdge(Value* _irVal, int _id ) : HdlObject(_irVal), successorId(_id) {name += "_br" + std::to_string(_id);};
+    ~HdlCFGEdge() {};
+
+    BasicBlock* getSrcBB() {return static_cast<Instruction*>(this->getIrValue())->getParent();}
+    BasicBlock* getDestBB() { BasicBlock* successor = static_cast<Instruction*>(this->getIrValue())->getSuccessor(successorId); 
+                              return successor;}
+};
+
 
 }

@@ -51,7 +51,7 @@ void IRPreprocessor::balanceCFG()
   std::map<hash_code , std::pair<BasicBlock*, BasicBlock*>> edgeMap;
   for(BasicBlock & bb : irFunction->getBasicBlockList())
   {
-    _log_stdout << bb.getName() << "\n";
+    LOG_S(IR_PP_DBG + 1) << bb.getName() << "\n";
     for(BasicBlock* succ: successors(&bb))
     {
       for(BasicBlock* succ_succ: successors(succ))
@@ -88,6 +88,8 @@ void IRPreprocessor::balanceCFG()
     srcTerm->replaceSuccessorWith(dst, newBB);
     dst->replacePhiUsesWith(src, newBB);
   }
-  _log_stdout<<"BalancedCFG\n";
-  _log_stdout << *irFunction;
+  LOG_S(IR_PP_DBG + 1)<<"BalancedCFG\n";
+  LOG_S(IR_PP_DBG + 1) << *irFunction;
+  LOG_DONE(INFO);
+
 }

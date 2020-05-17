@@ -36,7 +36,7 @@ class IRPreprocessor {
       }
     ~IRPreprocessor () {}
 
-    void run() { transformNames(); balanceCFG();}
+    void run() { transformNames();}// balanceCFG();}
     void transformNames();
     void balanceCFG();
 };

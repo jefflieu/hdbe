@@ -14,7 +14,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 1
+#define  DA_DBG 9
 #endif 
 
 using namespace hdbe;
@@ -52,9 +52,9 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   }
 
   //Function is a special output port 
-  portList.push_back(HdlPort(reinterpret_cast<llvm::Value*>(F)));                                       
+  portList.push_back(HdlPort(static_cast<llvm::Value*>(F)));                                       
   HdlPort &output = portList.back();
-  output.property = analyzeValue(reinterpret_cast<llvm::Value*>(F));
+  output.property = analyzeValue(static_cast<llvm::Value*>(F));
   output.name     = "func_ret";  
 
   for (auto I = inst_begin(F), E = inst_end(F); I != E; ++I) {
@@ -286,6 +286,27 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
 }
 
 
+// Value* DataAnalyzer::analyzeBranchOp(Instruction * brOp)
+// {
+//   bool staticIndex = false;
+//   Value * basePtr = nullptr;
+//   Value * idxPtr  = nullptr;
+//   LOG_S(DA_DBG + 1) << "Analyzing memory ops" << *memOp << "\n";
+//   switch(memOp->getOpcode())
+//       {
+//         case llvm::Instruction::Switch  :
+//                                           break;
+
+//         case llvm::Instruction::Br      :  break;
+                                                
+                                                
+//         default : 
+//       }
+//   return basePtr;
+// }
+
+
+
 void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 {
   //Walk the Basicblocks 
@@ -298,6 +319,7 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   //llvm::BranchProbabilityInfo BPI(*irFunction, LI);
   //llvm::BlockFrequencyInfo BFI(*irFunction, , LI);
   */
+  auto &TL = CDI_h->transitionList;
 
   LOG_START(INFO);
   
@@ -310,12 +332,13 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
         Instruction* term = pred->getTerminator();
         LOG_IF_S(FATAL, !term) << "Basic block is not well-formed\n";
         assert(term);
-        LOG_IF_S(FATAL,!llvm::BranchInst::classof(term)) << "not supported\n";
-        assert(llvm::BranchInst::classof(term));
-        auto brTerm = static_cast<llvm::BranchInst*>(term);
-        LOG_IF_S(FATAL, !brTerm->isUnconditional()) << "not supported\n";
-        assert(brTerm->isUnconditional());
+        //LOG_IF_S(FATAL,!llvm::BranchInst::classof(term)) << "not supported\n";
+        //assert(llvm::BranchInst::classof(term));
+        //auto brTerm = static_cast<llvm::BranchInst*>(term);
+        //LOG_IF_S(FATAL, !brTerm->isUnconditional()) << "not supported\n";
+        //assert(brTerm->isUnconditional());
       }
+    assert(pred_size(&bb) <= 16);
   }
 
   std::map<BasicBlock*, float> blockFrequency;
@@ -331,13 +354,23 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   {
     //_log_stdout << bb.getName() << "has " << bb.getNumSuccessors() << " successors\n";
     //blockFrequency[&bb] = 0.0;
-    LOG_S(DA_DBG + 1) << bb.getName() << "has: " << succ_size(&bb) << "successors \n";
+    LOG_S(DA_DBG + 1) << bb.getName() << " has: " << succ_size(&bb) << "successors \n";
     int succNum = succ_size(&bb);
-    for(BasicBlock* succ : successors(&bb))
+    //for(BasicBlock* succ : successors(&bb))
+    for(auto succ = succ_begin(&bb); succ != succ_end(&bb); ++succ)
     {
        LOG_S(DA_DBG + 2) << " => " << succ->getName() << "\n"; 
-       blockFrequency[succ]+=blockFrequency[&bb]/succNum;
+       blockFrequency[*succ]+=blockFrequency[&bb]/succNum;
+
+       //Generating edges
+       TL.push_back(HdlCFGEdge(bb.getTerminator(), succ.getSuccessorIndex()));
+       HdlCFGEdge &edge = TL.back();
+       edge.property.bitwidth = 1;
+       edge.property.stype    = HdlSignalType::regType;
+       LOG_S(DA_DBG + 1) << "Edge: " << edge.getSrcBB()->getName() << " -> " << edge.getDestBB()->getName() << "\n";
     }
+
+
   }
 
   for(auto item : blockFrequency)

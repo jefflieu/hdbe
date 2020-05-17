@@ -10,6 +10,7 @@
 #include "llvm/IR/BasicBlock.h"
 
 #include "HdlObject.hpp"
+#include "HDLUtil.hpp"
 
 
 namespace hdbe {
@@ -20,26 +21,23 @@ using StringRef   = llvm::StringRef;
 using String      = std::string;
 
 class HdlState : public HdlObject {
+
+  using InstListType = std::list<Instruction*>;
   
   public: 
-    std::list<Instruction* > instructionList;        
+    InstListType instructionList;        
     Instruction* termInstruction = nullptr;
-    BasicBlock * block = nullptr;        
     int id = 0;
     String name = "state_00";
     String empty_name = "";
     bool is_last = false;
   
   public: 
-    HdlState (BasicBlock *bb, int _id) :  block(bb), id(_id) { name = "state_" + block->getName().str() + std::to_string(id);}
-    HdlState (int _id) :  block(nullptr), id(_id) { name = "state_" + std::to_string(id);}
+    HdlState (int _id) :  id(_id) { name = makeHdlStateName(id);}
     ~HdlState() {}
 
-    StringRef   getbbName() {if (block) return block->getName(); else return StringRef(empty_name);}
-    String      getbbNameStr() {if (block) return block->getName().str(); else return String("");}
     StringRef   getName() {return StringRef(name);}
-    
-    
+        
     int   getId() {return this->id;}
     bool  isBranch() {return (termInstruction!=nullptr) || is_last;}
     void  setId(int _id) {id = _id;}

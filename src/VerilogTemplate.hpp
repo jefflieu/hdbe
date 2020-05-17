@@ -52,5 +52,6 @@ end //" << __name << "\n"
 #define VERILOG_ELSE              " else "
 #define VERILOG_BEGIN             "begin\n"
 #define VERILOG_END               "end\n"
+#define VERILOG_COMMENT           "//"
 
 #define VERILOG_CODE_SECTION(a) "\n\n/*\n" a "\n*/\n"

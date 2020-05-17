@@ -18,13 +18,6 @@
 #endif 
 
 using namespace hdbe;
-using Function    = llvm::Function;
-using GlobalValue = llvm::GlobalValue;
-using DataLayout  = llvm::DataLayout;
-using Module      = llvm::Module;
-using Argument    = llvm::Argument;
-using ConstantInt = llvm::ConstantInt;
-
 
 
 void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
@@ -286,26 +279,6 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
 }
 
 
-// Value* DataAnalyzer::analyzeBranchOp(Instruction * brOp)
-// {
-//   bool staticIndex = false;
-//   Value * basePtr = nullptr;
-//   Value * idxPtr  = nullptr;
-//   LOG_S(DA_DBG + 1) << "Analyzing memory ops" << *memOp << "\n";
-//   switch(memOp->getOpcode())
-//       {
-//         case llvm::Instruction::Switch  :
-//                                           break;
-
-//         case llvm::Instruction::Br      :  break;
-                                                
-                                                
-//         default : 
-//       }
-//   return basePtr;
-// }
-
-
 
 void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 {
@@ -323,7 +296,7 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 
   LOG_START(INFO);
   
-  //Check that a basic block that has multiple entries must have unconditional branches 
+  //Some pre-check 
   for(BasicBlock & bb : irFunction->getBasicBlockList())
   {
     if (pred_size(&bb) > 1)
@@ -332,11 +305,6 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
         Instruction* term = pred->getTerminator();
         LOG_IF_S(FATAL, !term) << "Basic block is not well-formed\n";
         assert(term);
-        //LOG_IF_S(FATAL,!llvm::BranchInst::classof(term)) << "not supported\n";
-        //assert(llvm::BranchInst::classof(term));
-        //auto brTerm = static_cast<llvm::BranchInst*>(term);
-        //LOG_IF_S(FATAL, !brTerm->isUnconditional()) << "not supported\n";
-        //assert(brTerm->isUnconditional());
       }
     assert(pred_size(&bb) <= 16);
   }
@@ -352,8 +320,6 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 
   for(BasicBlock & bb : irFunction->getBasicBlockList())
   {
-    //_log_stdout << bb.getName() << "has " << bb.getNumSuccessors() << " successors\n";
-    //blockFrequency[&bb] = 0.0;
     LOG_S(DA_DBG + 1) << bb.getName() << " has: " << succ_size(&bb) << "successors \n";
     int succNum = succ_size(&bb);
     //for(BasicBlock* succ : successors(&bb))
@@ -369,8 +335,6 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
        edge.property.stype    = HdlSignalType::regType;
        LOG_S(DA_DBG + 1) << "Edge: " << edge.getSrcBB()->getName() << " -> " << edge.getDestBB()->getName() << "\n";
     }
-
-
   }
 
   for(auto item : blockFrequency)

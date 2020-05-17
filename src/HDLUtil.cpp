@@ -2,9 +2,9 @@
 #include "HDLUtil.hpp"
 
 using namespace hdbe;
-std::string hdbe::makeHdlName(std::string name) {
-      std::string invalid_char = ".?+-*";
-      std::string new_string;
+String hdbe::makeHdlName(String name) {
+      String invalid_char = ".?+-*";
+      String new_string;
       static int Id = 0;
       if (name.length() == 0) {
         new_string = "s" + std::to_string(Id);
@@ -12,7 +12,7 @@ std::string hdbe::makeHdlName(std::string name) {
       } else  
         for(auto i = name.begin(); i != name.end(); i++)
           {          
-            if(invalid_char.find(*i) != std::string::npos)                     
+            if(invalid_char.find(*i) != String::npos)                     
               new_string.push_back('_');
             else 
               new_string.push_back(*i);  
@@ -21,11 +21,11 @@ std::string hdbe::makeHdlName(std::string name) {
 }
 
 
-std::string hdbe::makeHdlStateName(std::string bbName, int id) {
-  return makeHdlName("state_" + bbName + std::to_string(id));
+String hdbe::makeHdlStateName(int id) {
+  return makeHdlName(String("state_") + std::to_string(id));
 }
 
-std::string hdbe::getValueHdlName(Value *val)
+String hdbe::getValueHdlName(Value *val)
 {
   if (val->hasName())
     return val->getName().str();

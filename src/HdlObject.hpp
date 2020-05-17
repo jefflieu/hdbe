@@ -84,7 +84,7 @@ class HdlMemory : public HdlObject {
 };
 
 class HdlCFGEdge : public HdlObject {
-  int successorId = 0; //Operand in the branch operation. 
+  int successorId = 0; //The Successor ID 
   bool isBackEdge = false;  
   public: 
     HdlCFGEdge(String name) : HdlObject(name) {};

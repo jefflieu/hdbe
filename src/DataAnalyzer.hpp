@@ -12,11 +12,16 @@
 
 namespace hdbe {
 
-using Module   = llvm::Module;
-using Function = llvm::Function;
-using BasicBlock = llvm::BasicBlock;
 
 class DataAnalyzer {
+
+  using Function    = llvm::Function;
+  using GlobalValue = llvm::GlobalValue;
+  using DataLayout  = llvm::DataLayout;
+  using Module      = llvm::Module;
+  using Argument    = llvm::Argument;
+  using ConstantInt = llvm::ConstantInt;
+
 
   template<typename T> 
   bool isIn(std::list<T>& v, llvm::Value* val){

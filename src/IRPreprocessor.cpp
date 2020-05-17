@@ -43,6 +43,8 @@ void IRPreprocessor::transformNames()
   }
 }
 
+///This function is deprecated. 
+///This is used to insert an empty BasicBlock to the edge that jumps BasicBlock level
 void IRPreprocessor::balanceCFG()
 {
   //Identify the triangles: 

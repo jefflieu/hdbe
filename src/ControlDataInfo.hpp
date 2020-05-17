@@ -1,7 +1,3 @@
-/*
-  Author      : Jeff Lieu <lieumychuong@gmail.com>
-
-*/
 #pragma once 
 
 #include <typeinfo> 
@@ -19,14 +15,17 @@
 
 namespace hdbe {
 
-using Module      = llvm::Module;
-using Function    = llvm::Function;
-using Instruction = llvm::Instruction;
-using Value       = llvm::Value;
-
-
+/// This class holds all the results performed by other blocks such as DataAnalyzer, InstructionScheduler ..
+/// The results are stored in various lists which serve the ultimate goal of creating HDL description of the IR
 class ControlDataInfo {
   
+
+  using Module      = llvm::Module;
+  using Function    = llvm::Function;
+  using Instruction = llvm::Instruction;
+  using Value       = llvm::Value;
+
+
   friend class DataAnalyzer;
   friend class VerilogGenerator;
   friend class InstructionScheduler;

@@ -2,8 +2,8 @@
 
 EXAMPLES  :=counter fir shiftreg input_array rgb2yuv ctrlflow
 VCD_FILE  :=sim/logs/vlt_dump.vcd
-CLEAN_ALL := $(foreach ex, $(EXAMPLES), clean_$(ex))
-TEST_ALL  := $(foreach ex, $(EXAMPLES), test_$(ex))
+CLEAN_ALL := $(foreach ex, $(EXAMPLES), clean-$(ex))
+TEST_ALL  := $(foreach ex, $(EXAMPLES), test-$(ex))
 
 help : 
 	@echo "make <example>       : to make everything for the example and run simulation"
@@ -15,14 +15,14 @@ help :
 	cd $* && make -f ../ex.mak
 
 
-$(TEST_ALL) : test_% : % 
+$(TEST_ALL) : test-% : % 
 	@echo "Running simulation: " $*
 	cd $*/sim && ./sim +trace
 
 
 $(EXAMPLES): % : %/$(VCD_FILE)
 
-$(CLEAN_ALL) : clean_% : 
+$(CLEAN_ALL) : clean-% : 
 	cd $* && make clean -f ../ex.mak 
 
 

@@ -170,7 +170,7 @@ std::ostream& VerilogGenerator::writeStateSquence(std::ostream& os){
         
       }
     } else {
-      String next_state = makeHdlStateName( String(state.getbbName()), state.id + 1);
+      String next_state = makeHdlStateName(state.id + 1);
       assign += next_state + VERILOG_ASSIGN + state.getName().str() + VERILOG_ENDL;      
     }
   }
@@ -230,7 +230,7 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
   }
 
   statement += "//Basicblock valid conditions\n";
-  
+
   for(auto bb_iter = F->begin(), bb_end = F->end(); bb_iter != bb_end; bb_iter ++ )
   {
     BasicBlock& bb = *bb_iter;
@@ -257,32 +257,6 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
   }
   os << statement;
 
-
-  // for(auto bb_iter = F->begin(), bb_end = F->end(); bb_iter != bb_end; bb_iter ++ )
-  // {
-  //   BasicBlock& bb = *bb_iter;
-  //   HdlState& state = *(VIM[static_cast<Value*>(&bb)].birthTime.state);
-  //   String tag = "_" + std::to_string(state.id);
-
-  //   //Find out who is using 
-  //   bool first = true;
-  //   String statement = VERILOG_ASSIGN_STATEMENT + bb.getName().str() + tag + VERILOG_CONT_ASSIGN; 
-
-  //   if (bb.hasNPredecessors(0))
-  //   {
-  //     statement += String("func_start") + String(VERILOG_ENDL);
-  //   } else { 
-  //     for(User* user : bb.users())
-  //     {
-  //       assert(Instruction::classof(user));
-  //       statement += ((first)?" ":"|");
-  //       statement += writeControlActiveCondition(static_cast<Instruction*>(user), &bb, state.id);
-  //       first = false;
-  //     }
-  //     statement += VERILOG_ENDL;
-  //   }
-  //   os << statement;
-  // }
   LOG_DONE(VG_DBG);
   return os;
 }
@@ -292,7 +266,6 @@ String VerilogGenerator::writeControlActiveCondition(llvm::Instruction* I, llvm:
   String condition;
   char buf[256];
   unsigned size = 0;
-  HdlState& state = CDI_h->getInstructionState(I);
   String tag = "_" + std::to_string(id);
   String defltCondition("!(");
   if (I->getOpcode() == llvm::Instruction::Switch) {    
@@ -380,8 +353,6 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
 
   }
 
-
-  
   return instantiate;  
 } 
 

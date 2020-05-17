@@ -208,13 +208,7 @@ void InstructionScheduler::schedule(Function * irFunction)
     } else {
       ++var;
     }
-  }
-
-  //Update Transition List: 
-  for(auto edge : CDI_h->transitionList)
-  {
-    
-  }
+  } 
 
   LOG_DONE(INFO);
 }

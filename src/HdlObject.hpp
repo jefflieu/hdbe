@@ -85,11 +85,14 @@ class HdlMemory : public HdlObject {
 
 class HdlCFGEdge : public HdlObject {
   int successorId = 0; //The Successor ID 
-  bool isBackEdge = false;  
+  bool back_edge = false;  
   public: 
     HdlCFGEdge(String name) : HdlObject(name) {};
     HdlCFGEdge(Value* _irVal, int _id ) : HdlObject(_irVal), successorId(_id) {name += "_br" + std::to_string(_id);};
     ~HdlCFGEdge() {};
+
+    //simple back_edge check 
+    bool isBackEdge(){return back_edge || (getSrcBB() == getDestBB());}
 
     BasicBlock* getSrcBB() {return static_cast<Instruction*>(this->getIrValue())->getParent();}
     BasicBlock* getDestBB() { BasicBlock* successor = static_cast<Instruction*>(this->getIrValue())->getSuccessor(successorId); 

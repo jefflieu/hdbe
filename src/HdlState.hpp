@@ -11,6 +11,7 @@
 
 #include "HdlObject.hpp"
 #include "HDLUtil.hpp"
+#include "IRUtil.hpp"
 
 
 namespace hdbe {
@@ -44,12 +45,13 @@ class HdlState : public HdlObject {
     bool  isEntry() {return (id == 0);}
     bool  isReturn() { if (!termInstruction) return is_last; 
                        return (termInstruction->getOpcode() == llvm::Instruction::Ret);} 
-    void  isLast(bool tf)  {is_last = tf;}
+    void  setLast(bool tf)  {is_last = tf;}
+    bool  isLast() {return is_last;}
     void  dump(){
       _log_stdout << name << "\n";
       for(Instruction* i : instructionList)
       {
-        _log_stdout<<"Instruction: " << (*i) << "\n";
+        _log_stdout<< getBriefInfo(i) << (*i) << "\n";
       }
       if (termInstruction)
         _log_stdout<<"Terminator : " << (*termInstruction) << "\n";

@@ -8,6 +8,7 @@
 #ifndef  IS_DBG 
 #define  IS_DBG 9
 #endif  
+#define MAX_STEP 20 
 
 using namespace std;
 using namespace hdbe;
@@ -108,14 +109,22 @@ void InstructionScheduler::schedule(Function * irFunction)
       For the purpose of generating the HDL, the control information (the basicblock) is part of the input 
       The basicblock itself is the OUTPUT of a branch instruction, not the input
       We change the interpretation of inputs/outputs a bit to suit our purpose 
+      Essentially, there's not "branch" in our generated HDL but a flatten list of instructions to be executed. 
+      But the execution of the instruction is guarded by "BasicBlock" valid bit
     */
     for (auto list_i = instructions.begin(), list_end = instructions.end(); list_i != list_end;)
     {
       Instruction* I = *list_i;
-        //Get Operands           
+      //Get Operands           
       float dependency_valid = step;
-      LOG_S(IS_DBG + 1) << *I << " with opcode " << I->getOpcodeName() << "\n";
+      LOG_S(IS_DBG + 1) << "Considering " << *I << " with opcode " << I->getOpcodeName() << "\n";
 
+      /*
+        getInstructionInputs and getInstructionOutputs are implemented in the IRUtil block 
+        These functions reinterpret what INPUT and OUTPUT of an instruction means
+        For example, BasicBlock is output of a branch function and Input to normal instructions. 
+        An instruction can only be scheduled when the parent basicblock has been "scheduled"
+      */
       auto usedValues = getInstructionInputs(I);
       for(auto val : usedValues)
       {
@@ -128,13 +137,17 @@ void InstructionScheduler::schedule(Function * irFunction)
         dependency_valid = std::max<float>(dependency_valid, operand_valid); 
       }
 
+      /*
+        Request information from Hardware Description/Manager block
+        The combination of latency and valid time will ultimately decide whether the instruction can be executed 
+        Later on, this HWD will also bind the instruction to a particular hardware engine
+      */
       float latency    = HWD.getLatency(I);
-
       float valid_time = HWD.getValidTime(I, dependency_valid);
 
       LOG_S(IS_DBG + 1) << "Dependency valid time: " << dependency_valid << ", value valid time: " << valid_time << "\n";
 
-      //Branch Instruction has to be the last one
+      //Branch Instruction has to be the last one to be scheduled in a basicblock 
       bool branchInstrCheck = true;
       if (I->getOpcode() == llvm::Instruction::Ret || 
             I->getOpcode() == llvm::Instruction::Br  || 
@@ -143,50 +156,61 @@ void InstructionScheduler::schedule(Function * irFunction)
         LOG_S(IS_DBG + 1) << "Checking branch instruction " << branchInstrCheck << "\n";
       }
 
-      //Ok to be schedule 
+      //Ok to schedule 
       if ((valid_time < (step + 1.0) || (latency >= 1.0 && dependency_valid <(step+1.0))) && branchInstrCheck) {
+
+
+        LOG_S(IS_DBG + 1) << "Instruction: " << *I << " has been scheduled \n"; 
+        LOG_S(IS_DBG + 2) << "Valid time " << valid_time << "\n";            
 
         if (I->getOpcode()==llvm::Instruction::Ret)
           state.termInstruction = I;
         else 
           state.instructionList.push_back(I);  
 
+
+        //Give birth time to OUTPUTs
         auto producedValues = getInstructionOutputs(I);
         for(auto val : producedValues) {
           auto ret = CDI_h->addValueInfo(val);
           ret.first->second.setBirthTime(&state, valid_time);
         }
-        LOG_S(IS_DBG + 1) << "Instruction: " << *I << "\n"; 
-        LOG_S(IS_DBG + 1) << " --> ok to be scheduled, valid time " << valid_time << "\n";            
-
-        //Update usage time 
-        //The instruction is scheduled, we update the operands useage 
+        
+        //The instruction has been scheduled, we update the operands useTime 
         for(auto val : usedValues)
         {
           VIM[val].addUseTime(&state, step); 
         }
 
-          //Finally erase the item 
+        //Finally erase the item 
         list_i = instructions.erase(list_i);
-
+        //Reduce the outstanding instruction count of the BasicBlock
         bbInstrCountMap[I->getParent()]--;
-
 
       } else {
 
+        //Advance iterator to consider the next instruction in the queue
         ++ list_i;
 
       }
 
-    }   
+    }
+
+    //After considering all instructions in the queue, we advance the time step   
     step ++ ; 
-      //For debugging
-    if (step >= 20) dumpInstructions(instructions);
     
-    ASSERT(step < 20, "Something wrong in scheduling process") ;
+    //For debugging, if we keep iterating for 20 steps and we still can't finish
+    if (step >= MAX_STEP) dumpInstructions(instructions);    
+    ASSERT(step < MAX_STEP, "Something wrong in scheduling process") ;
   }
-  stateList.back().isLast(true);
-  
+
+
+  /* 
+    All instructions has been scheduled
+  */
+
+  //Update the "last" flag 
+  stateList.back().setLast(true);
 
   //Update the values that has no state bound to it 
   for(auto map_i = VIM.begin(), map_end = VIM.end(); map_i!=map_end; ++ map_i)

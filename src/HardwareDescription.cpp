@@ -13,6 +13,7 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
   {
     case llvm::Instruction::And    :
     case llvm::Instruction::Or     :
+    case llvm::Instruction::ICmp   : 
     case llvm::Instruction::Xor    : return 0.1;
     case llvm::Instruction::Trunc  :
     case llvm::Instruction::ZExt   :

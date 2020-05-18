@@ -61,8 +61,8 @@ int main(int argc, char **argv) {
   InstructionScheduler IS(&CDI);
   IS.schedule();
 
-  CDI.dumpStateList();
   CDI.dumpValueInfoMap();
+  CDI.dumpStateList();
 
   /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);

@@ -1,3 +1,4 @@
+#include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/InstructionSimplify.h"
 #include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/ValueHandle.h"
@@ -14,7 +15,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 9
+#define  DA_DBG 0
 #endif 
 
 using namespace hdbe;
@@ -149,10 +150,12 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
         break;
     }
   property.isUnused = value->users().empty();
+  property.isBackValue = isBackValue(value);
   LOG_S(DA_DBG + 2) << " isConstant  : " << property.isConstant << "\n";
   LOG_S(DA_DBG + 2) << " bitwidth    : " << property.bitwidth << "\n";
   LOG_S(DA_DBG + 2) << " arraylength : " << property.arraylength << "\n";
   LOG_S(DA_DBG + 2) << " isUnused    : " << property.isUnused << "\n";
+  LOG_S(DA_DBG + 2) << " isBackValue : " << property.isBackValue << "\n";
   LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 }
@@ -236,6 +239,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
   LOG_S(DA_DBG + 2) << " ReadOnly    : " << readOnly << "\n";
   LOG_S(DA_DBG + 2) << " WriteOnly   : " << writeOnly << "\n";
   LOG_S(DA_DBG + 2) << " isUnused    : " << property.isUnused << "\n";
+  LOG_S(DA_DBG + 2) << " isUnused    : " << property.isBackValue << "\n";
   LOG_S(DA_DBG + 1) << " end analysis \n";
   return property;
 } 
@@ -341,9 +345,45 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   {
     LOG_S(DA_DBG + 1) << item.first->getName() << ":" << item.second << "\n";
   }
+
+  //for(auto &bb = llvm::depth_first(&(irFunction->getEntryBlock())))
+  _log_stdout << "DepthFirstIterator\n";
+  using IterType = llvm::df_iterator<BasicBlock*>;
+  for(IterType df_iter = IterType::begin(&(irFunction->getEntryBlock())); 
+        df_iter != IterType::end(&(irFunction->getEntryBlock())); 
+          ++df_iter)
+  {
+    _log_stdout << df_iter->getName().str() << "\n";
+  }  
   
   LOG_DONE(INFO);
 }
+
+
+
+bool DataAnalyzer::isBackValue(Value* v)
+{
+  //A value is a backvalue if it is used by a PHI node 
+  //And the incoming edge is a back-edge 
+  bool is_fed_back = false;
+  if (!llvm::Instruction::classof(v)) return is_fed_back;
+  for (User* user : v->users())
+  {
+    if (llvm::PHINode::classof(user))
+    {
+      auto phi = static_cast<llvm::PHINode*>(user);
+      for(int i = 0; i<phi->getNumIncomingValues(); i++)
+        { 
+          BasicBlock* bb = phi->getIncomingBlock(i);
+          Value* value = phi->getIncomingValue(i);          
+          if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
+        }
+    }
+  }
+  return is_fed_back;
+}
+
+
 
 
 

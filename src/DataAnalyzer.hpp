@@ -21,6 +21,8 @@ class DataAnalyzer {
   using Module      = llvm::Module;
   using Argument    = llvm::Argument;
   using ConstantInt = llvm::ConstantInt;
+  using User        = llvm::User;
+  using Use         = llvm::Use;
 
 
   template<typename T> 
@@ -43,6 +45,9 @@ class DataAnalyzer {
  
   private: 
     ControlDataInfo *CDI_h;
+
+    bool isBackValue(Value* v);
+
   public: 
     DataAnalyzer (ControlDataInfo *cdi_h) :  CDI_h(cdi_h){};
     ~DataAnalyzer() {}

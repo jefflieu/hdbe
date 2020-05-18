@@ -29,9 +29,9 @@ float HardwareDescription::getLatency(llvm::Instruction* instruction)
     case llvm::Instruction::Store  : return 1.0;
     case llvm::Instruction::GetElementPtr  : return 0.0;
     case llvm::Instruction::Ret    : return 0.0;
-    case llvm::Instruction::Switch : return 0.0;
-    case llvm::Instruction::Br     : return 0.0;
-    case llvm::Instruction::PHI    : return 0.5;
+    case llvm::Instruction::Switch : return 0.1;
+    case llvm::Instruction::Br     : return 0.1;
+    case llvm::Instruction::PHI    : return 0.1;
     default: return 1.0;
   }
 }
@@ -41,10 +41,10 @@ float HardwareDescription::getValidTime(llvm::Instruction* instruction, float la
   float lat = getLatency(instruction);
   switch(instruction->getOpcode()) 
   {
-    case llvm::Instruction::Ret    :
+    case llvm::Instruction::Ret    :  
     case llvm::Instruction::Switch :
-    case llvm::Instruction::Br     : return (latest_dependency + lat);
-    case llvm::Instruction::Store  : return ceil(latest_dependency + 0.001);
+    case llvm::Instruction::Br     :  return latest_dependency + lat;                                      
+    case llvm::Instruction::Store  :  return ceil(latest_dependency + 0.001);
     default: return latest_dependency + getLatency(instruction);
   }
 }

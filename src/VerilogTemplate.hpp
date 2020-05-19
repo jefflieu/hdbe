@@ -55,3 +55,12 @@ end //" << __name << "\n"
 #define VERILOG_COMMENT           "//"
 
 #define VERILOG_CODE_SECTION(a) "\n\n/*\n" a "\n*/\n"
+
+#define CYCLE_TAG(n)  ("_" + std::to_string(n))
+#define VALID_TAG      "_valid"
+#define LOOP_TAG       "_loop"
+#define STR_TAG(str)   #str
+#define NEW_LINE       "\n"
+#define INDENT(n)      String(2*n, ' ')
+
+

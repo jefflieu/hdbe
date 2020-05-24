@@ -53,6 +53,8 @@ class VerilogGenerator : public CodeGenerator {
     String writeHdlObjDeclaration(HdlObject& obj, String tag);
     String writeSimpleInstruction(llvm::Instruction* I);
     String writePHIInstruction(llvm::Instruction* I);
+    String writeArrayObject(HdlMemory &array);
+    String writeMemoryObject(HdlMemory &memory);
     //String writeCtrlFlowInstruction(llvm::Instruction* I);
     String writeControlActiveCondition(llvm::Instruction* I, llvm::BasicBlock *bb, int id);
     Ostream& writeRegisterStages(Ostream& os);

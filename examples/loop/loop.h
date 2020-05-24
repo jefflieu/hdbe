@@ -17,6 +17,7 @@ typedef signed short       s16;
 typedef signed char        s8;
 
 u32 loop(u8 n);
+//u32 loop(u32** a, u8 r, u8 c);
 
 #ifdef __cplusplus  
 }

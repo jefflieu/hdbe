@@ -130,7 +130,7 @@ void InstructionScheduler::schedule(Function * irFunction)
       {
         if (VIM.count(val) == 0) {
           dependency_valid = 1.0e6; 
-          LOG_S(IS_DBG + 3) << "Not found \n"; 
+          LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n"; 
           break;
         }
         float operand_valid = VIM[val].birthTime.time;
@@ -142,8 +142,11 @@ void InstructionScheduler::schedule(Function * irFunction)
         The combination of latency and valid time will ultimately decide whether the instruction can be executed 
         Later on, this HWD will also bind the instruction to a particular hardware engine
       */
-      float latency    = HWD.getLatency(I);
-      float valid_time = HWD.getValidTime(I, dependency_valid);
+      HardwareDescription::ExecutionInfo EI = HWD.requestToSchedule(I, dependency_valid);
+      //float latency    = HWD.getLatency(I);
+      //float valid_time = HWD.getValidTime(I, dependency_valid);
+      float latency = EI.latency;
+      float valid_time = EI.valid; 
 
       LOG_S(IS_DBG + 1) << "Dependency valid time: " << dependency_valid << ", value valid time: " << valid_time << "\n";
 
@@ -157,7 +160,7 @@ void InstructionScheduler::schedule(Function * irFunction)
       }
 
       //Ok to schedule 
-      if ((valid_time < (step + 1.0) || (latency >= 1.0 && dependency_valid <(step+1.0))) && branchInstrCheck) {
+      if (( (valid_time >= 0 && valid_time < (step + 1.0)) || (latency >= 1.0 && dependency_valid <(step+1.0))) && branchInstrCheck) {
 
 
         LOG_S(IS_DBG + 1) << "Instruction: " << *I << " has been scheduled \n"; 

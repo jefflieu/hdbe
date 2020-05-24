@@ -13,6 +13,13 @@ namespace hdbe {
 class ControlDataInfo;
 
 class HardwareDescription {
+  public:
+    struct ExecutionInfo
+    {
+      float latency = -1.0;
+      int pipeline = 0;
+      float valid = -1.0;
+    };
   
   private: 
     ControlDataInfo* CDI_h;
@@ -22,9 +29,7 @@ class HardwareDescription {
     ~HardwareDescription() {};
 
     void setParent(ControlDataInfo* cdi) {CDI_h = cdi;}
-    float getLatency(llvm::Instruction* instruction);
-    float getValidTime(llvm::Instruction* instruction, float latest_dependency);
-
+    ExecutionInfo requestToSchedule(llvm::Instruction* instruction, float latest_dependency);
 };
 
 }

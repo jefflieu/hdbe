@@ -17,9 +17,9 @@ input  bit func_rst   \n\n\
 \n\
 endmodule //" << __name << "\n\n"
 
-#define VERILOG_CLKPROCESS_TOP(__name) "\
+#define VERILOG_CLKPROCESS_TOP(__name) String("\
 always@(posedge func_clk) \n\
-begin //" << __name << "\n\n"
+begin //"  __name "\n\n")
 
 #define VERILOG_RANGE(a, b) ("[" + std::to_string(a) + ":" + std::to_string(b) + "]")
 
@@ -33,8 +33,8 @@ begin //" << __name << "\n\n"
   "<< statement << ";\n"
 
 
-#define VERILOG_CLKPROCESS_BOTTOM(__name) "\n\
-end //" << __name << "\n"
+#define VERILOG_CLKPROCESS_BOTTOM(__name) String("\n\
+end //" __name "\n")
 
 #define VERILOG_PORTMAP(portstr, varstr)  std::to_string("." + portstr + " ( " + varstr + ")")
 #define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))

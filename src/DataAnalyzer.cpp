@@ -1,10 +1,9 @@
+#include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/InstructionSimplify.h"
 #include "llvm/Analysis/LoopInfo.h"
+#include "llvm/IR/Dominators.h"
 #include "llvm/IR/ValueHandle.h"
-#include "llvm/Support/BranchProbability.h"
-#include "llvm/Analysis/BranchProbabilityInfo.h"
-#include "llvm/Analysis/BlockFrequencyInfo.h"
 #include "llvm/Analysis/CFG.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Type.h"
@@ -15,7 +14,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 0
+#define  DA_DBG 2
 #endif 
 
 using namespace hdbe;
@@ -39,10 +38,15 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
     portList.push_back(HdlPort((llvm::Value*)&*I));                                       
     HdlPort &port       = portList.back();
     port.property       = analyzeValue(&*I);
+    
+    //If a port is a memory port, we don't copy it in the variable list
+    //Otherwise we do 
+    if (port.property.vtype != HdlVectorType::memoryType) {
     variableList.push_back(HdlVariable((llvm::Value*)&*I));
     HdlVariable &var    = variableList.back();
     var.property        = port.property;
     var.property.stype  = HdlSignalType::regType;   
+    }
   }
 
   //Function is a special output port 
@@ -199,10 +203,21 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                     }
                                                           
                                                 }
+                                                //User of GetPtrElement Instruction 
+                                                for(llvm::User * ld_store : U->users())
+                                                {
+                                                  assert(llvm::Instruction::classof(ld_store));
+                                                  switch((static_cast<llvm::Instruction*>(ld_store))->getOpcode())
+                                                  {
+                                                    case llvm::Instruction::Load: writeOnly = false; break;
+                                                    case llvm::Instruction::Store: readOnly = false; break;
+                                                    default: LOG_S(ERROR) << I->getOpcodeName() << " is not supported \n";assert(0);
+                                                  }
+                                                }
                                                 break;
         case llvm::Instruction::Load          : writeOnly = false; break;
         case llvm::Instruction::Store         : readOnly  = false; break;
-        default : staticIndex = false; LOG(ERROR,  I->getOpcodeName() << " is not supported \n");
+        default : staticIndex = false; LOG_S(ERROR) <<  I->getOpcodeName() << " is not supported \n"; assert(0);
       }
     }
   }
@@ -286,16 +301,9 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
 
 void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
 {
-  //Walk the Basicblocks 
-  /*
-  llvm::AnalysisManager<Function> FAM;
-  llvm::LoopAnalysis LA;
-  llvm::LoopInfo LI = LA.run(*irFunction, FAM);
-  llvm::BranchProbabilityAnalysis BPA;
-  BPA.run(*irFunction, FAM);
-  //llvm::BranchProbabilityInfo BPI(*irFunction, LI);
-  //llvm::BlockFrequencyInfo BFI(*irFunction, , LI);
-  */
+  llvm::DominatorTree DT(*irFunction);
+  llvm::LoopInfo LI(DT);
+  
   auto &TL = CDI_h->transitionList;
 
   LOG_START(INFO);
@@ -326,7 +334,6 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
   {
     LOG_S(DA_DBG + 1) << bb.getName() << " has: " << succ_size(&bb) << "successors \n";
     int succNum = succ_size(&bb);
-    //for(BasicBlock* succ : successors(&bb))
     for(auto succ = succ_begin(&bb); succ != succ_end(&bb); ++succ)
     {
        LOG_S(DA_DBG + 2) << " => " << succ->getName() << "\n"; 
@@ -337,7 +344,8 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
        HdlCFGEdge &edge = TL.back();
        edge.property.bitwidth = 1;
        edge.property.stype    = HdlSignalType::regType;
-       LOG_S(DA_DBG + 1) << "Edge: " << edge.getSrcBB()->getName() << " -> " << edge.getDestBB()->getName() << "\n";
+       edge.property.isBackValue = LI.isLoopHeader(*succ) && (LI.getLoopFor(&bb) == LI.getLoopFor(*succ));
+       LOG_S(DA_DBG + 1) << "Edge: " << edge.getSrcBB()->getName() << " -> " << edge.getDestBB()->getName() << " is back edge  " << edge.property.isBackValue << "\n";
     }
   }
 
@@ -346,15 +354,25 @@ void DataAnalyzer::analyzeBasicBlocks(Module* irModule, Function* irFunction)
     LOG_S(DA_DBG + 1) << item.first->getName() << ":" << item.second << "\n";
   }
 
-  //for(auto &bb = llvm::depth_first(&(irFunction->getEntryBlock())))
-  _log_stdout << "DepthFirstIterator\n";
-  using IterType = llvm::df_iterator<BasicBlock*>;
-  for(IterType df_iter = IterType::begin(&(irFunction->getEntryBlock())); 
-        df_iter != IterType::end(&(irFunction->getEntryBlock())); 
-          ++df_iter)
-  {
-    _log_stdout << df_iter->getName().str() << "\n";
-  }  
+  // //for(auto &bb = llvm::depth_first(&(irFunction->getEntryBlock())))
+  // _log_stdout << "DepthFirstIterator\n";
+  // using IterType = llvm::df_iterator<BasicBlock*>;
+  // for(IterType df_iter = IterType::begin(&(irFunction->getEntryBlock())); 
+  //       df_iter != IterType::end(&(irFunction->getEntryBlock())); 
+  //         ++df_iter)
+  // {
+  //   _log_stdout << df_iter->getName().str() << "\n";
+  // }  
+
+  // _log_stdout << "LoopInfo\n";
+  // LI.print(_log_stdout);
+
+  // auto PredBegin = llvm::GraphTraits<BasicBlock *>::child_begin(&entry);
+  // auto PredEnd = llvm::GraphTraits<BasicBlock *>::child_end(&entry);
+  // for(auto pred = PredBegin; pred!=PredEnd; ++pred)
+  // {
+  //   _log_stdout << "child of entry " << (*pred)->getName() << "\n";
+  // }
   
   LOG_DONE(INFO);
 }
@@ -376,13 +394,30 @@ bool DataAnalyzer::isBackValue(Value* v)
         { 
           BasicBlock* bb = phi->getIncomingBlock(i);
           Value* value = phi->getIncomingValue(i);          
-          if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
+          //if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
+          if (value == v) 
+          {
+            HdlCFGEdge &e = CDI_h->findCFGEdge(bb, phi->getParent());
+            is_fed_back = e.isBackEdge();
+          }
         }
     }
   }
   return is_fed_back;
 }
 
+void DataAnalyzer::analyzeLoops(Module* irModule, Function* irFunction)
+{
+  llvm::DominatorTree DT(*irFunction);
+  llvm::LoopInfo LI(DT);
+  LOG_START(INFO);
+  LI.print(_log_stdout);
+  auto loops = LI.getLoopsInPreorder();
+  _log_stdout << " Function has " << loops.size() << " loops \n";
+
+  LOG_DONE(INFO);
+
+}
 
 
 

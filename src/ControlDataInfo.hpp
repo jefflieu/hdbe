@@ -2,6 +2,8 @@
 
 #include <typeinfo> 
 
+#include "llvm/IR/Dominators.h"
+#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Module.h"
@@ -50,6 +52,9 @@ class ControlDataInfo {
     std::map<Value*, ValueLifeInfo> valueInfoMap;
 
     HardwareDescription     HWD;
+    llvm::DominatorTree DT;
+    llvm::LoopInfo LI;
+    unsigned loopCount;
 
   public :
     ControlDataInfo () {HWD.setParent(this);};     
@@ -58,8 +63,13 @@ class ControlDataInfo {
         this->irFunction = irModule->getFunction(functionName);
         if (!irFunction) 
           LOG(ERROR, "Function named " << functionName << " .. not found");
-        else 
-          LOG(INFO, "Module loaded");  
+        else {
+          LOG(INFO, "Module loaded");
+          DT = llvm::DominatorTree(*irFunction);
+          LI = llvm::LoopInfo(DT);
+          loopCount = LI.getLoopsInPreorder().size();
+          LOG_S(INFO) << "Loop Info extracted " << loopCount << " loop found\n";
+        }
       }
     ~ControlDataInfo () {}
 

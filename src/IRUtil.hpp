@@ -8,6 +8,7 @@
 namespace hdbe {
 
 using ValuePtrVector = llvm::SmallVector<llvm::Value*, 16>; 
+using BasicBlock     = llvm::BasicBlock; 
 using Instruction    = llvm::Instruction; 
 using Value          = llvm::Value; 
 using Twine          = llvm::Twine; 
@@ -23,4 +24,5 @@ bool isUselessInstruction(Instruction* I);
 ValuePtrVector getInstructionInputs(Instruction* I);
 ValuePtrVector getInstructionOutputs(Instruction* I);
 String getBriefInfo(Value* val);
+bool isBackEdge(BasicBlock *src, BasicBlock *dst);
 }

@@ -54,13 +54,16 @@ class DataAnalyzer {
 
     void analyze(Module * irModule, Function * irFunction);
     void analyze() {
-      analyze(CDI_h->irModule, CDI_h->irFunction);
+      analyzeLoops(CDI_h->irModule, CDI_h->irFunction);
       analyzeBasicBlocks(CDI_h->irModule, CDI_h->irFunction);
+      analyze(CDI_h->irModule, CDI_h->irFunction);
       }
     HdlProperty analyzePointer(llvm::Value* valuePointerTy);
     HdlProperty analyzeValue(llvm::Value* value);
     static Value* analyzeMemoryOp(Instruction * memOp, int* index);
     void analyzeBasicBlocks(Module* irModule, Function* irFunction);
+    void analyzeLoops(Module* irModule, Function* irFunction);
+
 };
 
 }

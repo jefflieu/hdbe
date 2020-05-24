@@ -77,7 +77,8 @@ hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I)
           llvm::BasicBlock* blk = phi->getIncomingBlock(i);
           llvm::Value* val = phi->getIncomingValue(i);
           //Simple loop 
-          if (blk != phi->getParent())
+          //if (blk != phi->getParent())
+          if (! isBackEdge(blk, phi->getParent()))
           {
             VPV.push_back(static_cast<llvm::Value*>(blk));
             VPV.push_back(static_cast<llvm::Value*>(val));
@@ -98,6 +99,15 @@ hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I)
   return VPV;
 }
 
+//Kind of expensive routine !!!
+bool hdbe::isBackEdge(BasicBlock *src, BasicBlock *dst)
+{
+  auto F = src->getParent();
+  auto DT = llvm::DominatorTree(*F);
+  auto LI = llvm::LoopInfo(DT);
+  return (LI.isLoopHeader(dst) && (LI.getLoopFor(src) == LI.getLoopFor(dst)));
+}
+
 //These are Values that the Instruction produces
 hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
 {
@@ -108,9 +118,12 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
   {
     case llvm::Instruction::Br      : 
         assert(llvm::BranchInst::classof(I));
-        if (static_cast<llvm::BranchInst*>(I)->isConditional())
-          VPV.push_back(I->getOperand(1));
-        else 
+        if (static_cast<llvm::BranchInst*>(I)->isConditional()) {
+          if (! isBackEdge(static_cast<llvm::BranchInst*>(I)->getParent(), static_cast<llvm::BasicBlock*>(I->getOperand(1))))
+            VPV.push_back(I->getOperand(1));
+          if (! isBackEdge(static_cast<llvm::BranchInst*>(I)->getParent(), static_cast<llvm::BasicBlock*>(I->getOperand(2))))
+            VPV.push_back(I->getOperand(2));
+        } else 
           VPV.push_back(I->getOperand(0));
         
         VPV.push_back(static_cast<Value*>(I));
@@ -125,7 +138,8 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
           {
             LOG_IF_S(ERROR, ! llvm::BasicBlock::classof(I->getOperand(i))) << "target of switch must be BasicBlock\n";
             assert(llvm::BasicBlock::classof(I->getOperand(i)));
-            VPV.push_back(I->getOperand(i));
+            if (! isBackEdge(static_cast<llvm::BranchInst*>(I)->getParent(), static_cast<llvm::BasicBlock*>(I->getOperand(i))))
+              VPV.push_back(I->getOperand(i));
           }
         }
         VPV.push_back(static_cast<Value*>(I));

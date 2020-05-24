@@ -87,7 +87,20 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
                                          decl += VERILOG_VAR_DECL(bit, (obj.name + tag + dflt));
                                         
                                         break;
-      case HdlVectorType::memoryType :  decl += "--Memory port" ; 
+      case HdlVectorType::memoryType :  decl = "//Memory\n" ; 
+                                        if (obj.property.stype != HdlSignalType::regType) {
+                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_addr") + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_wdat") + end_decl;
+                                          decl += VERILOG_INPUT  + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_rdat") + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, obj.name + "_wren") + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, obj.name + "_rden");
+                                        } else {
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_addr") + end_decl;
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_wdat") + end_decl;
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_rdat") + end_decl;
+                                          decl += VERILOG_VAR_DECL(bit, obj.name + "_wren") + end_decl;
+                                          decl += VERILOG_VAR_DECL(bit, obj.name + "_rden");
+                                        }
                                         break;
       
       case HdlVectorType::arrayType  :  decl += VERILOG_ARR_DECL(bit, obj.property.bitwidth,  (obj.name + tag) , obj.property.arraylength);
@@ -627,40 +640,60 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
   for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
   {
     HdlMemory &memObj = *I;
-    //Writing Load 
-    for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
-    {
-      if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
-        HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-        int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
-        String tag0 = "_" + std::to_string(birthCycle);
-        int idx = computeIndex(*instr_i, memObj.getIrValue());
-        if (memObj.property.stype == HdlSignalType::inputType)
-          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + tag0 + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
-        else 
-          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
-      }
-    }   
-    
-    for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
-    {
-      if ((*instr_i)->getOpcode() == llvm::Instruction::Store){
-        HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-        String tag0 = CYCLE_TAG(state->id);
-        int idx = computeIndex(*instr_i, memObj.getIrValue());
-        Value* val = (*instr_i)->getOperand(0);
-        store_assign += "if (" + state->name + VERILOG_LOGICAL_AND + (*instr_i)->getParent()->getName().str() + tag0 + ")";
-        store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
-        if (memObj.property.stype == HdlSignalType::outputType)
-          store_assign += "  " + memObj.name + VALID_TAG + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + state->name + VERILOG_ENDL;
-        }
-    }
+  
+    os << writeArrayObject(memObj);
     
   }
 
-  os << load_assign;
-  os << VERILOG_CLKPROCESS_TOP("store_handling");
-  os << store_assign;
-  os << VERILOG_CLKPROCESS_BOTTOM("store_handling");
+  // os << load_assign;
+  // os << VERILOG_CLKPROCESS_TOP("store_handling");
+  // os << store_assign;
+  // os << VERILOG_CLKPROCESS_BOTTOM("store_handling");
   return os;
 }
+
+String VerilogGenerator::writeArrayObject(HdlMemory &memObj)
+{
+  auto &variableList = CDI_h->variableList;
+  auto &VIM          = CDI_h->valueInfoMap;
+  String load_assign;
+  String store_assign;
+  //Writing Load 
+  for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
+  {
+    if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
+      //HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+      int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
+      String tag0 = "_" + std::to_string(birthCycle);
+      int idx = computeIndex(*instr_i, memObj.getIrValue());
+      if (memObj.property.stype == HdlSignalType::inputType)
+        load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + tag0 + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+      else 
+        load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
+    }
+  }   
+  
+  for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
+  {
+    if ((*instr_i)->getOpcode() == llvm::Instruction::Store){
+      HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+      String tag0 = CYCLE_TAG(state->id);
+      int idx = computeIndex(*instr_i, memObj.getIrValue());
+      Value* val = (*instr_i)->getOperand(0);
+      store_assign += "if (" + state->name + VERILOG_LOGICAL_AND + (*instr_i)->getParent()->getName().str() + tag0 + ")";
+      store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
+      if (memObj.property.stype == HdlSignalType::outputType)
+        store_assign += "  " + memObj.name + VALID_TAG + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + state->name + VERILOG_ENDL;
+      }
+  }
+
+  String ret = String("\n\n/*") + memObj.name + String("*/\n");
+  ret += String("//Load handling\n");
+  ret += load_assign;
+  ret += String(VERILOG_CLKPROCESS_TOP("store_handling"));
+  ret += store_assign;
+  ret += String(VERILOG_CLKPROCESS_BOTTOM("store_handling"));  
+  return ret;
+}
+
+String VerilogGenerator::writeMemoryObject(HdlMemory &memory) {};

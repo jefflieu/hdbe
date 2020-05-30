@@ -75,12 +75,15 @@ class HdlVariable : public HdlObject {
 };
 
 class HdlMemory : public HdlObject {
-  
+  unsigned addrSize   = 64;
+  unsigned memorySize = 2048;
   public: 
-    HdlMemory(String name) : HdlObject(name) {};
-    HdlMemory(Value* _irVal) : HdlObject(_irVal) {};
+    HdlMemory(String name) : HdlObject(name) {}
+    HdlMemory(Value* _irVal) : HdlObject(_irVal) {addrSize = 64;}
     ~HdlMemory() {};
     InstrucionList memInstrList;
+    unsigned getAddrSize() {return addrSize;}
+    unsigned getMemorySize() {return memorySize;}
  
 };
 

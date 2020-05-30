@@ -89,7 +89,7 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
                                         break;
       case HdlVectorType::memoryType :  decl = "//Memory\n" ; 
                                         if (obj.property.stype != HdlSignalType::regType) {
-                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_addr") + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.arraylength, obj.name + "_addr") + end_decl;
                                           decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_wdat") + end_decl;
                                           decl += VERILOG_INPUT  + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_rdat") + end_decl;
                                           decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, obj.name + "_wren") + end_decl;
@@ -561,6 +561,7 @@ Ostream& VerilogGenerator::writeInputAssignment(Ostream& os)
   for(auto var_i = portList.begin(), var_last = portList.end(); var_i != var_last; ++var_i)
   {    
     if (var_i->property.stype != HdlSignalType::inputType) continue;
+    if (var_i->property.vtype == HdlVectorType::memoryType) continue;
     if (var_i->property.isUnused) continue;
     String tag0 = "_0";
     assign += VERILOG_ASSIGN_STATEMENT + var_i->name + tag0 + VERILOG_CONT_ASSIGN + var_i->name + VERILOG_ENDL;
@@ -640,9 +641,10 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
   for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
   {
     HdlMemory &memObj = *I;
-  
-    os << writeArrayObject(memObj);
-    
+    if (memObj.property.vtype == HdlVectorType::arrayType)
+      os << writeArrayObject(memObj);
+    else
+      os << writeMemoryObject(memObj);     
   }
 
   // os << load_assign;
@@ -696,4 +698,103 @@ String VerilogGenerator::writeArrayObject(HdlMemory &memObj)
   return ret;
 }
 
-String VerilogGenerator::writeMemoryObject(HdlMemory &memory) {};
+String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
+{
+  auto &variableList = CDI_h->variableList;
+  auto &VIM          = CDI_h->valueInfoMap;
+  String GEP;
+  String load_assign;
+  String store_assign;
+  String addr_mux_map = "func_clk, " + memObj.name + "_addr";
+  String wdat_mux_map = "func_clk, " + memObj.name + "_wdat";
+  String rden_assign;
+  unsigned ld_cnt = 0;
+  unsigned st_cnt = 0;
+  char buf[256];
+  unsigned size = 0;
+  
+  //Writing Load 
+  for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
+  {
+    HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
+    int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
+    String tag0 = CYCLE_TAG(state->id);
+    String valid_tag = CYCLE_TAG(birthCycle);
+    
+    switch((*instr_i)->getOpcode())
+    {
+      case llvm::Instruction::Load:
+          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + valid_tag + VERILOG_CONT_ASSIGN + memObj.name + String("_rdat") + VERILOG_ENDL;
+          addr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          ld_cnt++;
+          break;
+      case llvm::Instruction::Store:
+          addr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          wdat_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
+          st_cnt++;
+          break;
+      case llvm::Instruction::GetElementPtr:
+          GEP += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + (*instr_i)->getOperand(1)->getName().str() + tag0 + VERILOG_ENDL;
+          break;
+      default: break;
+    }
+    
+  }
+
+  String instantiate;
+  instantiate += GEP;
+  instantiate += load_assign;
+  if (st_cnt + ld_cnt > 0) {
+    size = sprintf(buf,"%10s #(", "MemoryAddrMux");
+    instantiate += String(buf, size);     
+    size = sprintf(buf,"%10d,", ld_cnt + st_cnt);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d)", 64);
+    instantiate += String(buf, size);
+
+    size = sprintf(buf," Addr_of_%s ( ", memObj.name.data());
+    instantiate += String(buf, size);
+    instantiate += addr_mux_map;
+    for(unsigned i = st_cnt + ld_cnt; i < 16; i++)
+    {
+      instantiate += ",0";
+    }
+    instantiate += ");\n";
+  }
+
+  if (st_cnt > 0) {
+    size = sprintf(buf,"%10s #(", "MemoryWdatMux");
+    instantiate += String(buf, size);     
+    size = sprintf(buf,"%10d,", st_cnt);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d)", 64);
+    instantiate += String(buf, size);
+
+    size = sprintf(buf," Wdat_of_%s ( ", memObj.name.data());
+    instantiate += String(buf, size);
+    instantiate += wdat_mux_map;
+    for(unsigned i = st_cnt + ld_cnt; i < 16; i++)
+    {
+      instantiate += ",0";
+    }
+    instantiate += ");\n";
+  }
+
+  String ret = VERILOG_CODE_SECTION(memObj.name);
+  ret += instantiate;
+  return ret;
+}
+
+// String VerilogGenerator::writeGEPInstruction(Instruction* GEP)
+// {
+//   auto &variableList = CDI_h->variableList;
+//   auto &VIM          = CDI_h->valueInfoMap;
+//   HdlState* state = VIM[static_cast<Value*>(GEP)].birthTime.state;
+//   int birthCycle = floor(VIM[static_cast<Value*>(GEP)].birthTime.time);
+//   String tag0 = CYCLE_TAG(state->id);
+    
+//   String calculate_ptr;
+//   //Simple GEP instruction
+//   return calculate_ptr;
+// }
+

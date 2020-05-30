@@ -103,6 +103,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
 HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
 { 
   HdlProperty property;
+  const DataLayout & DL = CDI_h->irModule->getDataLayout();
   llvm::Type *type_h = value->getType();
   LOG_S(DA_DBG + 1) << "Value analysis \n";
   LOG_S(DA_DBG + 1) << *value << "(" << value << ")\n";
@@ -144,7 +145,16 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                         break; 
                                       }
       case llvm::Type::PointerTyID :  {
-                                        property = analyzePointer(value);                                               
+                                        if(llvm::GetElementPtrInst::classof(value)) {
+                                          auto I = static_cast<llvm::GetElementPtrInst*>(value);
+                                          property.stype = HdlSignalType::regType;
+                                          property.bitwidth   = DL.getPointerSizeInBits();      
+                                          property.isConstant = ConstantInt::classof(I->getOperand(1));
+                                          if (property.isConstant)
+                                            property.dflt = (static_cast<llvm::ConstantInt*>(I->getOperand(1)))->getSExtValue();
+                                        } else {
+                                          property = analyzePointer(value);
+                                        }
                                         break;
                                       }
       default :   

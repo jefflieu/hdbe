@@ -54,7 +54,7 @@ end //" __name "\n")
 #define VERILOG_END               "end\n"
 #define VERILOG_COMMENT           "//"
 
-#define VERILOG_CODE_SECTION(a) "\n\n/*\n" a "\n*/\n"
+#define VERILOG_CODE_SECTION(a) String("\n\n/*\n") + String(a) + String("\n*/\n")
 
 #define CYCLE_TAG(n)  ("_" + std::to_string(n))
 #define VALID_TAG      "_valid"

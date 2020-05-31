@@ -21,6 +21,11 @@ endmodule //" << __name << "\n\n"
 always@(posedge func_clk) \n\
 begin //"  __name "\n\n")
 
+#define VERILOG_ALWAYS_COMB(__name) String("\
+always_comb \n\
+begin //"  __name "\n\n")
+
+
 #define VERILOG_RANGE(a, b) ("[" + std::to_string(a) + ":" + std::to_string(b) + "]")
 
 #define VERILOG_VAR_DECL(_type, name) (std::string(#_type" ") + name)

@@ -46,7 +46,7 @@ bool hdbe::isUselessInstruction(Instruction* I)
 }
 
 /// Sometimes, the instructions operands are not really the input but rather the output for our own purposes
-hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I)
+hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I, bool exclude_backedge)
 {
   ValuePtrVector VPV;
   int opNum = I->getNumOperands();
@@ -78,7 +78,7 @@ hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I)
           llvm::Value* val = phi->getIncomingValue(i);
           //Simple loop 
           //if (blk != phi->getParent())
-          if (! isBackEdge(blk, phi->getParent()))
+          if (! isBackEdge(blk, phi->getParent()) || ! exclude_backedge)
           {
             VPV.push_back(static_cast<llvm::Value*>(blk));
             VPV.push_back(static_cast<llvm::Value*>(val));
@@ -113,7 +113,7 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
 {
   ValuePtrVector VPV;
   int opNum = I->getNumOperands();
-
+  VPV.push_back(static_cast<Value*>(I));
   switch(I->getOpcode())
   {
     case llvm::Instruction::Br      : 
@@ -125,9 +125,6 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
             VPV.push_back(I->getOperand(2));
         } else 
           VPV.push_back(I->getOperand(0));
-        
-        VPV.push_back(static_cast<Value*>(I));
-
         break;
     case llvm::Instruction::Switch  : 
         assert(llvm::SwitchInst::classof(I));
@@ -142,10 +139,9 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
               VPV.push_back(I->getOperand(i));
           }
         }
-        VPV.push_back(static_cast<Value*>(I));
         break;
     default:
-      VPV.push_back(static_cast<Value*>(I));
+      break;
   }
 
   return VPV;

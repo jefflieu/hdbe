@@ -53,7 +53,7 @@ int main(int argc, char** argv, char** env) {
     top->func_clk = 0;
     top->func_start = 0;
 
-    const int kCALLS         = 10;
+    const int kCALLS         = 200;
     const int kCLK_PER_CALL  = 1e9;
     const int kMEM_SIZE      = 128;
     const int kSTART_TIME    = 10;

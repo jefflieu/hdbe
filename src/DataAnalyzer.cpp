@@ -77,9 +77,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
 
     }
     //
-    ValuePtrVector depList = getInstructionInputs(&*I);
-    //for(llvm::Use &use : I->operands()) {
-    // llvm::Value* val = use.get();     
+    ValuePtrVector depList = getInstructionInputs(&*I, false);
     for(Value* val : depList) {
       if (! isIn(variableList, val) && ! isIn(portList, val) && ! isIn(memObjList, val)) {
         variableList.push_back(HdlVariable((llvm::Value*)val));
@@ -221,7 +219,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                   {
                                                     case llvm::Instruction::Load: writeOnly = false; break;
                                                     case llvm::Instruction::Store: readOnly = false; break;
-                                                    default: LOG_S(ERROR) << I->getOpcodeName() << " is not supported \n";assert(0);
+                                                    default: LOG_S(ERROR) << *(static_cast<llvm::Instruction*>(ld_store)) << " is not supported \n";assert(0);
                                                   }
                                                 }
                                                 break;

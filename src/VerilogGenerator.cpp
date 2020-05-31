@@ -135,10 +135,12 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     //for each signal, get live time 
     LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
     int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
-    int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
-    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << liveTime << "\n";
+    //int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
+    int useTime   = std::max<int>(floor(VIM[var.getIrValue()].useTimeList.back().time), birthTime) ;
+
+    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << useTime << "\n";
     
-    for(uint32_t i = birthTime; i <= liveTime; i++)
+    for(uint32_t i = birthTime; i <= useTime; i++)
       {
         String tag = CYCLE_TAG(i);
         os << writeHdlObjDeclaration(var, tag);
@@ -167,7 +169,7 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     //for each signal, get live time 
     LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
     int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
-    int useTime   = floor(VIM[var.getDestBB()].useTimeList.back().time);
+    int useTime   = std::max<int>(floor(VIM[var.getDestBB()].useTimeList.back().time), birthTime) ;
     LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << useTime << "\n";
     
     for(uint32_t i = birthTime; i <= useTime; i++)
@@ -574,7 +576,8 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
 {
   auto &stateList = CDI_h->stateList;
   String assign;
-  
+  String comb_assign;
+  bool ret_void = false;
   os << VERILOG_CODE_SECTION("Return handling");    
   for(auto state_i = stateList.begin(), state_end = stateList.end(); state_i != state_end; ++state_i)
   {    
@@ -585,21 +588,34 @@ Ostream& VerilogGenerator::writeReturnStatement(Ostream& os)
         if (state.termInstruction != nullptr) {
           String bbName = state.termInstruction->getParent()->getName().str() + tag;
           assign += VERILOG_IF(bbName) + "\n";
-        } else 
+          comb_assign += VERILOG_ASSIGN_STATEMENT + String("func_done") + VERILOG_CONT_ASSIGN + bbName + VERILOG_ENDL;
+        } else {
           assign += VERILOG_IF(state.getName().str()) + "\n";
+          comb_assign += VERILOG_ASSIGN_STATEMENT + String("func_done") + VERILOG_CONT_ASSIGN + state.getName().str() + VERILOG_ENDL;
+        }
         assign += VERILOG_BEGIN;
         assign += "func_done <= 1'b1;\n";
-        if (state.termInstruction != nullptr && state.termInstruction->getNumOperands() > 0)
+        if (state.termInstruction != nullptr && state.termInstruction->getNumOperands() > 0) {
           assign += "func_ret  <= " + state.termInstruction->getOperand(0)->getName().str() + tag + VERILOG_ENDL;
+          comb_assign += VERILOG_ASSIGN_STATEMENT + String("func_ret") + VERILOG_CONT_ASSIGN + state.termInstruction->getOperand(0)->getName().str() + tag + VERILOG_ENDL;
+        } else {
+          ret_void = true;
+        }
         assign += VERILOG_END; 
       }
     }
   }
 
-  os << VERILOG_CLKPROCESS_TOP("return_handling");
-  os << "func_done <= 1'b0;\n";
-  os << assign;
-  os << VERILOG_CLKPROCESS_BOTTOM("return_handling");
+  if (false  && (!ret_void)) {
+    //Register stage at the return function
+    os << VERILOG_CLKPROCESS_TOP("return_handling");
+    os << "func_done <= 1'b0;\n";
+    os << assign;
+    os << VERILOG_CLKPROCESS_BOTTOM("return_handling");
+  } else {
+    //No register at the return
+    os << comb_assign;
+  }
 }
 
 

@@ -155,7 +155,7 @@ void InstructionScheduler::schedule(Function * irFunction)
       if (I->getOpcode() == llvm::Instruction::Ret || 
             I->getOpcode() == llvm::Instruction::Br  || 
               I->getOpcode() == llvm::Instruction::Switch) {
-        branchInstrCheck = (bbInstrCountMap[I->getParent()] == 1);
+        branchInstrCheck = (bbInstrCountMap[I->getParent()] == 1) && isBranchSchedulable(I, step);
         LOG_S(IS_DBG + 1) << "Checking branch instruction " << branchInstrCheck << "\n";
       }
 
@@ -175,9 +175,16 @@ void InstructionScheduler::schedule(Function * irFunction)
         //Give birth time to OUTPUTs
         auto producedValues = getInstructionOutputs(I);
         for(auto val : producedValues) {
+          if (BasicBlock::classof(val) && !isBasicBlockSchedulable(static_cast<BasicBlock*>(val))) continue;
           auto ret = CDI_h->addValueInfo(val);
           ret.first->second.setBirthTime(&state, valid_time);
         }
+
+        if (isBackValue(static_cast<Value*>(I))) {
+          LOG_S(INFO) << *I << "is a back value\n";
+          VIM[I].addUseTime(&state, step);
+        }
+
         
         //The instruction has been scheduled, we update the operands useTime 
         for(auto val : usedValues)
@@ -259,4 +266,70 @@ void InstructionScheduler::dumpInstructions(std::list<Instruction*> &instList)
     }
   }
 }
+
+bool InstructionScheduler::isBackValue(Value* v)
+{
+  //A value is a backvalue if it is used by a PHI node 
+  //And the incoming edge is a back-edge 
+  bool is_fed_back = false;
+  if (!llvm::Instruction::classof(v)) return is_fed_back;
+  for (User* user : v->users())
+  {
+    if (llvm::PHINode::classof(user))
+    {
+      auto phi = static_cast<llvm::PHINode*>(user);
+      for(int i = 0; i<phi->getNumIncomingValues(); i++)
+        { 
+          BasicBlock* bb = phi->getIncomingBlock(i);
+          Value* value = phi->getIncomingValue(i);          
+          //if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
+          if (value == v) 
+          {
+            HdlCFGEdge &e = CDI_h->findCFGEdge(bb, phi->getParent());
+            is_fed_back = e.isBackEdge();
+          }
+        }
+    }
+  }
+  return is_fed_back;
+}
+
+bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float current_step)
+{
+  auto &M              = *(CDI_h->irModule);
+  auto &VIM            = CDI_h->valueInfoMap;
+  float  dependency_valid = 0;
+  //All values produced by instrution in the basicblock must be valid 
+  BasicBlock* parentBlock     = brInst->getParent();
+
+  for(Instruction  &I : parentBlock->getInstList())
+  {
+    if ((&I) == brInst) continue;
+    if (VIM.count(&I) == 0) {
+      dependency_valid = 1.0e6;                  
+      LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n"; 
+      break;
+    }
+    dependency_valid = std::max<float>(dependency_valid, VIM[&I].birthTime.time); 
+  }
+  return (dependency_valid < (current_step + 1.0));
+}
+
+bool InstructionScheduler::isBasicBlockSchedulable(BasicBlock * bb)
+{
+  auto &M              = *(CDI_h->irModule);
+  auto &VIM            = CDI_h->valueInfoMap;
+  for(BasicBlock* pred : predecessors(bb))
+  {
+    Instruction* term = pred->getTerminator();
+    assert(term);
+    if (isBackEdge(pred, bb)) continue;
+    if (VIM.count(term) == 0) return false;//All predecessor terminator has been scheduled
+  }
+  return true;
+}
+
+
+
+
 

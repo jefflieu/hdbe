@@ -41,6 +41,11 @@ HardwareDescription::ExecutionInfo HardwareDescription::requestToSchedule(llvm::
 
   switch(instruction->getOpcode()) 
   {
+    case llvm::Instruction::Load   :  if (memOpIdx >= 0) {
+                                        exeInfo.valid    = latest_dependency; 
+                                        exeInfo.pipeline = 0; 
+                                        break;
+                                      }
     case llvm::Instruction::Store  :  exeInfo.valid = ceil(latest_dependency + 0.001);
                                       exeInfo.pipeline = 1;
                                       break;

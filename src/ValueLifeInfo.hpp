@@ -21,40 +21,41 @@ using String = std::string;
 
 namespace hdbe {
 class ValueLifeInfo {
-  struct TimePoint {    
-    HdlState * state = nullptr;
-    float      time = 0;
+  struct TimePoint {
+    float time;
   };
-
   using UseTimeListType = std::vector<TimePoint>;
 
   public: 
     Value              *irValue;
     UseTimeListType    useTimeList;
-    TimePoint          birthTime;
+    TimePoint          schedule;
+    TimePoint          valid;
 
   public: 
-    ValueLifeInfo(): irValue(nullptr) {};
-    ValueLifeInfo(Value* _val): irValue(_val) {};
+    ValueLifeInfo(): irValue(nullptr), schedule({-1.0}), valid({-1}) {};
+    ValueLifeInfo(Value* _val): irValue(_val), schedule({-1.0}), valid({-1}) {};
     ~ValueLifeInfo() {};
     
-    void setBirthTime(HdlState *state, float time);
+    void setBirthTime(float schedule, float valid);
     
-    void addUseTime(HdlState *state, float time);
+    void addUseTime(float time);
+
+    float getScheduledTime() {return schedule.time;}
+    float getValidTime() {return valid.time;}
+    float getLatestUseTime() {return useTimeList.empty()?-1:useTimeList.back().time;}
     
     UseTimeListType& getUseTimeList() {return useTimeList;}
     
-    //Assuming all are in same block
-    int getLiveTime();
-
     String repr() {
       String s;
       s += "ValueLifeInfo of " + getBriefInfo(irValue) + " : "; 
-      s += "" + std::to_string(birthTime.time) +  ",";
+      s += "" + std::to_string(getScheduledTime()) +  ",";
+      s += "" + std::to_string(getValidTime()) +  ",";
       if (useTimeList.empty())
         s += "no user\n";
       else 
-        s += std::to_string(useTimeList.back().time) + "\n";
+        s += std::to_string(getLatestUseTime()) + "\n";
       return s;
     }
 };

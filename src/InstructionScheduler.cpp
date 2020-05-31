@@ -44,7 +44,7 @@ void InstructionScheduler::schedule(Function * irFunction)
     {
       LOG_S(IS_DBG) << *gv_i << "\n" ;
       auto ret = CDI_h->addValueInfo(&*gv_i);
-      ret.first->second.setBirthTime(nullptr, 0.0);
+      ret.first->second.setBirthTime(0.0, 0.0);
     }
 
   //Assign valid_time for Arguments:   
@@ -52,12 +52,12 @@ void InstructionScheduler::schedule(Function * irFunction)
     {
       LOG_S(IS_DBG) << *arg_i << "\n";
       auto ret = CDI_h->addValueInfo(&*arg_i);
-      ret.first->second.setBirthTime(nullptr, 0.0);     
+      ret.first->second.setBirthTime(0.0, 0.0);     
     }
 
   //Assign valid time for entry Block 
   auto entryBlkInfo = CDI_h->addValueInfo(&entryBlock);
-  entryBlkInfo.first->second.setBirthTime(nullptr, 0.0);  
+  entryBlkInfo.first->second.setBirthTime(0.0, 0.0);  
 
 
   LOG(IS_DBG, "Collecting instructions for scheduling");
@@ -84,7 +84,7 @@ void InstructionScheduler::schedule(Function * irFunction)
         if (llvm::Constant::classof(val))
         {
           auto ret = CDI_h->addValueInfo(&*val);
-          ret.first->second.setBirthTime(nullptr, 0.0);  
+          ret.first->second.setBirthTime(0.0, 0.0);  
         }
       }                        
     }
@@ -133,7 +133,7 @@ void InstructionScheduler::schedule(Function * irFunction)
           LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n"; 
           break;
         }
-        float operand_valid = VIM[val].birthTime.time;
+        float operand_valid = VIM[val].valid.time;
         dependency_valid = std::max<float>(dependency_valid, operand_valid); 
       }
 
@@ -177,19 +177,19 @@ void InstructionScheduler::schedule(Function * irFunction)
         for(auto val : producedValues) {
           if (BasicBlock::classof(val) && !isBasicBlockSchedulable(static_cast<BasicBlock*>(val))) continue;
           auto ret = CDI_h->addValueInfo(val);
-          ret.first->second.setBirthTime(&state, valid_time);
+          ret.first->second.setBirthTime(step, valid_time);
         }
 
         if (isBackValue(static_cast<Value*>(I))) {
           LOG_S(INFO) << *I << "is a back value\n";
-          VIM[I].addUseTime(&state, step);
+          VIM[I].addUseTime(step);
         }
 
         
         //The instruction has been scheduled, we update the operands useTime 
         for(auto val : usedValues)
         {
-          VIM[val].addUseTime(&state, step); 
+          VIM[val].addUseTime(step); 
         }
 
         //Finally erase the item 
@@ -222,15 +222,6 @@ void InstructionScheduler::schedule(Function * irFunction)
   //Update the "last" flag 
   stateList.back().setLast(true);
 
-  //Update the values that has no state bound to it 
-  for(auto map_i = VIM.begin(), map_end = VIM.end(); map_i!=map_end; ++ map_i)
-  {
-    if (! map_i->second.birthTime.state) 
-      {
-        map_i->second.setBirthTime(&stateList.front(),0.0);
-      } 
-    LOG_S(IS_DBG+1) << *(map_i->first) << " -- " << " Use time list " << map_i->second.useTimeList.size() << " \n"  ;
-  }
 
   //Remove unused variables 
   for(auto var = variableList.begin(); var!=variableList.end();)
@@ -261,7 +252,7 @@ void InstructionScheduler::dumpInstructions(std::list<Instruction*> &instList)
         LOG_S(IS_DBG + 1) << "Not found \n"; 
         break;
       }
-      float operand_valid = VIM[val].birthTime.time;
+      float operand_valid = VIM[val].valid.time;
       LOG_S(IS_DBG + 1) << "Valid time: " << operand_valid << "\n";
     }
   }
@@ -310,7 +301,7 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
       LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n"; 
       break;
     }
-    dependency_valid = std::max<float>(dependency_valid, VIM[&I].birthTime.time); 
+    dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time); 
   }
   return (dependency_valid < (current_step + 1.0));
 }

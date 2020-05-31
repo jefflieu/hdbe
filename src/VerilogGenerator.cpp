@@ -134,13 +134,12 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     HdlVariable &var = *I;
     //for each signal, get live time 
     LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
-    int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
-    //int liveTime = VIM[var.getIrValue()].getLiveTime() + birthTime;
-    int useTime   = std::max<int>(floor(VIM[var.getIrValue()].useTimeList.back().time), birthTime) ;
+    int valid_time  = floor(VIM[var.getIrValue()].valid.time);
+    int use_time    = std::max<int>(floor(VIM[var.getIrValue()].getLatestUseTime()), valid_time) ;
 
-    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << useTime << "\n";
+    LOG_S(VG_DBG + 1) << " Timing info " << valid_time << " " << use_time << "\n";
     
-    for(uint32_t i = birthTime; i <= useTime; i++)
+    for(uint32_t i = valid_time; i <= use_time; i++)
       {
         String tag = CYCLE_TAG(i);
         os << writeHdlObjDeclaration(var, tag);
@@ -168,11 +167,11 @@ std::ostream& VerilogGenerator::writeSignalDeclaration(std::ostream& os)
     HdlCFGEdge &var = *E;
     //for each signal, get live time 
     LOG_S(VG_DBG) << *(var.getIrValue()) << "\n";
-    int birthTime = floor(VIM[var.getIrValue()].birthTime.time);
-    int useTime   = std::max<int>(floor(VIM[var.getDestBB()].useTimeList.back().time), birthTime) ;
-    LOG_S(VG_DBG + 1) << " Timing info " << birthTime << " " << useTime << "\n";
+    int valid_time = floor(VIM[var.getIrValue()].valid.time);
+    int use_time   = std::max<int>(floor(VIM[var.getDestBB()].getLatestUseTime()), valid_time) ;
+    LOG_S(VG_DBG + 1) << " Timing info " << valid_time << " " << use_time << "\n";
     
-    for(uint32_t i = birthTime; i <= useTime; i++)
+    for(uint32_t i = valid_time; i <= use_time; i++)
     {
       String tag = CYCLE_TAG(i);
       os << writeHdlObjDeclaration(var, tag);
@@ -281,7 +280,7 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
   for(auto &E : TL)
   {
     //For each transition edge we write the valid condition of it 
-    int step_id = floor(VIM[static_cast<Value*>(E.getIrValue())].birthTime.time);
+    int step_id = floor(VIM[static_cast<Value*>(E.getIrValue())].valid.time);
     String tag = CYCLE_TAG(step_id);
     statement += VERILOG_ASSIGN_STATEMENT + E.getName().str() + tag + VERILOG_CONT_ASSIGN; 
     statement += writeControlActiveCondition(static_cast<Instruction*>(E.getIrValue()), E.getDestBB(), step_id);
@@ -293,8 +292,8 @@ std::ostream& VerilogGenerator::writeCtrlFlow(std::ostream& os )
   for(auto bb_iter = F->begin(), bb_end = F->end(); bb_iter != bb_end; bb_iter ++ )
   {
     BasicBlock& bb = *bb_iter;
-    HdlState& state = *(VIM[static_cast<Value*>(&bb)].birthTime.state);
-    String tag = CYCLE_TAG(state.id);
+    int schedule_time = floor(VIM[static_cast<Value*>(&bb)].getScheduledTime());
+    String tag = CYCLE_TAG(schedule_time);
     statement += VERILOG_ASSIGN_STATEMENT + bb.getName().str() + tag + VERILOG_CONT_ASSIGN; 
     if (bb.hasNPredecessors(0))
     {
@@ -363,7 +362,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   char buf[256];
   unsigned size = 0;
-  HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
+  int schedule_time = floor(VIM[static_cast<Value*>(I)].getScheduledTime());
   size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
   String opcodeString = String(buf, size);
 
@@ -387,11 +386,11 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
   size = sprintf(buf,"func_clk, ");
   instantiate += String(buf, size);   
   
-  String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(state.id);
+  String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(schedule_time);
   size = sprintf(buf,"%s,\n", activeCycle.data());
   instantiate += String(buf, size);
   
-  String tag = CYCLE_TAG(state.id);
+  String tag = CYCLE_TAG(schedule_time);
 
   size = sprintf(buf,"%s%s%s,\n", space.data(), I->getName().data(), &tag[0]);  
   instantiate += String(buf, size); 
@@ -433,8 +432,8 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   char buf[256];
   unsigned size = 0;
-  HdlState& state = *(VIM[static_cast<Value*>(I)].birthTime.state);
-  float valid_time = VIM[static_cast<Value*>(I)].birthTime.time;
+  int schedule_time = floor(VIM[static_cast<Value*>(I)].getScheduledTime());
+  float valid_time = VIM[static_cast<Value*>(I)].valid.time;
   size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
   // String opcodeString = "\"" + String(I->getOpcodeName()) + pad + "\"";
   String opcodeString = String(buf, size);
@@ -481,11 +480,11 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   
   //size = sprintf(buf,"%s, ", state.getName().data());
   //
-  String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(state.id);
+  String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(schedule_time);
   size = sprintf(buf,"%s, ", activeCycle.data());
   instantiate += String(buf, size);
   
-  String execute_tag = CYCLE_TAG(state.id);
+  String execute_tag = CYCLE_TAG(schedule_time);
   for(const llvm::Use &use : I->operands())
     { 
       size = sprintf(buf,"%s%s, ", getValueHdlName(use.get()).data(), &execute_tag[0]);
@@ -509,16 +508,16 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
   for(auto var_i = variableList.begin(), var_last = variableList.end(); var_i != var_last; ++var_i)
   {    
     if (var_i->property.isConstant) continue;
-    int birthCycle = floor(VIM[var_i->getIrValue()].birthTime.time);
-    int useCycle   = floor(VIM[var_i->getIrValue()].useTimeList.back().time);
-    for(int i = birthCycle + 1; i <= useCycle; ++i)
+    int valid_time = floor(VIM[var_i->getIrValue()].getValidTime());
+    int use_time   = floor(VIM[var_i->getIrValue()].getLatestUseTime());
+    for(int i = valid_time + 1; i <= use_time; ++i)
     {
         assign += var_i->name + CYCLE_TAG(i) + VERILOG_ASSIGN + var_i->name + CYCLE_TAG(i-1) + VERILOG_ENDL;
     }
 
     if (var_i->property.isBackValue)
     {
-      String tag0 = CYCLE_TAG(birthCycle);
+      String tag0 = CYCLE_TAG(valid_time);
       String activeCycle = static_cast<Instruction*>(var_i->getIrValue())->getParent()->getName().str() + tag0;
       //if (activeCycle) variable_loop <= variable_n;
       assign += VERILOG_IF(activeCycle) + NEW_LINE + 
@@ -532,9 +531,9 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
  for(auto var_i = transitionList.begin(), var_last = transitionList.end(); var_i != var_last; ++var_i)
   {
     //for each signal, get live time     
-    int birthTime = floor(VIM[var_i->getIrValue()].birthTime.time);
-    int useTime   = floor(VIM[var_i->getDestBB()].useTimeList.back().time);    
-    for(uint32_t i = birthTime + 1; i <= useTime; i++)
+    int valid_time  = floor(VIM[var_i->getIrValue()].getValidTime());
+    int use_time    = floor(VIM[var_i->getDestBB()].getLatestUseTime());    
+    for(uint32_t i = valid_time + 1; i <= use_time; i++)
       {
         String tag1 = "_" + std::to_string(i);
         String tag0 = "_" + std::to_string(i-1);
@@ -542,7 +541,7 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
       }
     if (var_i->isBackEdge())
     {
-      String tag0 = "_" + std::to_string(birthTime);
+      String tag0 = "_" + std::to_string(valid_time);
       assign += var_i->name + "_loop" + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
     }
   }
@@ -556,7 +555,6 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
 Ostream& VerilogGenerator::writeInputAssignment(Ostream& os)
 {
   String assign;
-  std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlPort>& portList       = CDI_h->portList;
 
   os <<VERILOG_CODE_SECTION("Copying inputs");
@@ -647,8 +645,6 @@ end\n\n",
 
 Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
   
-  auto &variableList = CDI_h->variableList;
-  auto &VIM          = CDI_h->valueInfoMap;
   auto &memObjList   = CDI_h->memObjList;
   String load_assign;
   String store_assign;
@@ -663,10 +659,6 @@ Ostream& VerilogGenerator::writeArrayObject(Ostream &os){
       os << writeMemoryObject(memObj);     
   }
 
-  // os << load_assign;
-  // os << VERILOG_CLKPROCESS_TOP("store_handling");
-  // os << store_assign;
-  // os << VERILOG_CLKPROCESS_BOTTOM("store_handling");
   return os;
 }
 
@@ -680,9 +672,8 @@ String VerilogGenerator::writeArrayObject(HdlMemory &memObj)
   for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
   {
     if ((*instr_i)->getOpcode() == llvm::Instruction::Load){
-      //HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-      int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
-      String tag0 = "_" + std::to_string(birthCycle);
+      int valid_time = floor(VIM[static_cast<Value*>(*instr_i)].getValidTime());
+      String tag0 = "_" + std::to_string(valid_time);
       int idx = computeIndex(*instr_i, memObj.getIrValue());
       if (memObj.property.stype == HdlSignalType::inputType)
         load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + memObj.name + tag0 + "[" + std::to_string(idx) + "]"+ VERILOG_ENDL;
@@ -694,14 +685,15 @@ String VerilogGenerator::writeArrayObject(HdlMemory &memObj)
   for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
   {
     if ((*instr_i)->getOpcode() == llvm::Instruction::Store){
-      HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-      String tag0 = CYCLE_TAG(state->id);
+      int schedule_time = floor(VIM[static_cast<Value*>(*instr_i)].getScheduledTime());
+      String tag0 = CYCLE_TAG(schedule_time);
       int idx = computeIndex(*instr_i, memObj.getIrValue());
       Value* val = (*instr_i)->getOperand(0);
-      store_assign += "if (" + state->name + VERILOG_LOGICAL_AND + (*instr_i)->getParent()->getName().str() + tag0 + ")";
+      String execute_state = (*instr_i)->getParent()->getName().str() + tag0;
+      store_assign += "if (" + execute_state + ")";
       store_assign += "  " + memObj.name + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + val->getName().str() + tag0 + VERILOG_ENDL;
       if (memObj.property.stype == HdlSignalType::outputType)
-        store_assign += "  " + memObj.name + VALID_TAG + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + state->name + VERILOG_ENDL;
+        store_assign += "  " + memObj.name + VALID_TAG + "[" + std::to_string(idx) + "]"+ VERILOG_ASSIGN + execute_state + VERILOG_ENDL;
       }
   }
 
@@ -732,10 +724,10 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   //Writing Load 
   for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
   {
-    HdlState* state = VIM[static_cast<Value*>(*instr_i)].birthTime.state;
-    int birthCycle = floor(VIM[static_cast<Value*>(*instr_i)].birthTime.time);
-    String tag0 = CYCLE_TAG(state->id);
-    String valid_tag = CYCLE_TAG(birthCycle);
+    int schedule_time = floor(VIM[static_cast<Value*>(*instr_i)].getScheduledTime());
+    int valid_time    = floor(VIM[static_cast<Value*>(*instr_i)].getValidTime());
+    String tag0 = CYCLE_TAG(schedule_time);
+    String valid_tag = CYCLE_TAG(valid_time);
     
     switch((*instr_i)->getOpcode())
     {
@@ -800,17 +792,3 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   ret += instantiate;
   return ret;
 }
-
-// String VerilogGenerator::writeGEPInstruction(Instruction* GEP)
-// {
-//   auto &variableList = CDI_h->variableList;
-//   auto &VIM          = CDI_h->valueInfoMap;
-//   HdlState* state = VIM[static_cast<Value*>(GEP)].birthTime.state;
-//   int birthCycle = floor(VIM[static_cast<Value*>(GEP)].birthTime.time);
-//   String tag0 = CYCLE_TAG(state->id);
-    
-//   String calculate_ptr;
-//   //Simple GEP instruction
-//   return calculate_ptr;
-// }
-

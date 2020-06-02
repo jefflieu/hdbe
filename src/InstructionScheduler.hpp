@@ -27,6 +27,7 @@ class InstructionScheduler {
     bool isBackValue(Value* v);
     bool isBranchSchedulable(Instruction * brInst, float current_step);
     bool isBasicBlockSchedulable(BasicBlock * bb);
+    float getDependencyValidTime(Instruction* instr);
 
 
   public: 

@@ -77,7 +77,6 @@ hdbe::ValuePtrVector hdbe::getInstructionInputs(Instruction* I, bool exclude_bac
           llvm::BasicBlock* blk = phi->getIncomingBlock(i);
           llvm::Value* val = phi->getIncomingValue(i);
           //Simple loop 
-          //if (blk != phi->getParent())
           if (! isBackEdge(blk, phi->getParent()) || ! exclude_backedge)
           {
             VPV.push_back(static_cast<llvm::Value*>(blk));

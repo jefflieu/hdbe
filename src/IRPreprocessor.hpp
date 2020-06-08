@@ -20,7 +20,9 @@ class IRPreprocessor {
   using Twine = llvm::Twine; 
   using Instruction = llvm::Instruction;
   using StringRef = llvm::StringRef;
+  using User = llvm::User;
   using String = std::string;
+  using InstPointerVector = llvm::SmallVector<Instruction*, 16>;
 
   private: 
     Module   *irModule   = nullptr; 
@@ -36,9 +38,12 @@ class IRPreprocessor {
       }
     ~IRPreprocessor () {}
 
-    void run() { transformNames();}// balanceCFG();}
+    void run() { removePointerPHI(); transformNames();}// balanceCFG();}
     void transformNames();
     void balanceCFG();
+    void removePointerPHI();
+    void getRelatedValues(Instruction* I, BasicBlock* bb, InstPointerVector & ipv);
+
 };
 
 }

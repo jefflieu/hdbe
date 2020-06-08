@@ -6,7 +6,7 @@
 #include "InstructionScheduler.hpp"
 
 #ifndef  IS_DBG 
-#define  IS_DBG 1
+#define  IS_DBG 9
 #endif  
 #define MAX_STEP 20 
 

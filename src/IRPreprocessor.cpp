@@ -5,14 +5,14 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/StringRef.h"
-
+#include "llvm/Support/Casting.h"
 
 
 #include "IRPreprocessor.hpp"
 #include "HDLUtil.hpp"
 
 #ifndef IR_PP_DBG 
-#define IR_PP_DBG 5
+#define IR_PP_DBG 1
 #endif 
 
 using namespace hdbe;
@@ -95,3 +95,121 @@ void IRPreprocessor::balanceCFG()
   LOG_DONE(INFO);
 
 }
+
+
+void IRPreprocessor::removePointerPHI()
+{
+  InstPointerVector worklist;
+  InstPointerVector clonelist;
+  InstPointerVector storeinst_list;
+  std::map<Instruction*, Instruction*> clonemap;
+  std::map<Instruction*, Instruction*> store_phi_map;
+  Instruction* store_inst = nullptr;
+  Instruction* phi_inst = nullptr;
+  BasicBlock* bb = nullptr;
+  llvm::SmallVector<BasicBlock*,4> predecessor_list;
+
+  for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
+  {
+    for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
+    {
+      if (llvm::PHINode::classof(&(*I)) && I->getType()->isPointerTy() && I->getName().endswith(StringRef(".sink"))) 
+      {
+        phi_inst = static_cast<llvm::Instruction*>(&(*I));
+        LOG_S(IR_PP_DBG) << *I << " is PHINode with SINK tag\n";
+        
+        unsigned user_cnt = 0;
+        for(User* user : I->users())
+        {
+          assert(llvm::StoreInst::classof(user) && "The user of PointerPHI must be Store instruction");
+          store_inst = static_cast<llvm::Instruction*>(user);
+          assert(store_inst->getParent() == I->getParent() && "The user of PointerPHI must be in the same basicblock");
+          user_cnt ++;
+        }
+        assert(user_cnt == 1 && "The user of the PointerPHI must be the only one\n");
+        assert(store_inst);
+        phi_inst = &(*I);
+        store_phi_map[store_inst] = phi_inst;
+      }
+    }
+  }
+
+  for(auto item : store_phi_map)
+  {
+    
+    store_inst = item.first;
+    phi_inst = item.second;
+    worklist.push_back(store_inst);
+    getRelatedValues(store_inst, store_inst->getParent(), worklist);
+    for(unsigned n = 0; n < static_cast<llvm::PHINode*>(phi_inst)->getNumIncomingValues(); n++){
+      
+      //Making Clones
+      LOG_S(INFO) << "Cloning " << n << "\n";
+      clonelist.clear();
+      for(auto i : worklist)
+      {
+        LOG_S(INFO) << *i << "\n";
+        Instruction *clone = i->clone();
+
+        //Set name of cloned instruction if necessary 
+        if (! i->getName().empty())
+          clone->setName(i->getName() + Twine(".") + static_cast<llvm::PHINode*>(phi_inst)->getIncomingBlock(n)->getName());
+
+        clonelist.push_back(clone);
+        clonemap[i] = clone;
+      }  
+      
+      //Making adjustment of value references
+      for(auto i : clonelist)
+      {
+        for (Value * value : i->operands())
+        {
+          if (clonemap.count(static_cast<Instruction*>(value))==1)
+          {
+            static_cast<User*>(i)->replaceUsesOfWith(value, clonemap[static_cast<Instruction*>(value)]);
+          } else if (llvm::PHINode::classof(value)) {
+            static_cast<User*>(i)->replaceUsesOfWith(value, static_cast<llvm::PHINode*>(value)->getIncomingValue(n));
+          } else {
+
+          }
+        }
+        LOG_S(INFO) << *i << "\n";
+      }
+
+      //Now inserting the instruction to the block 
+      Instruction* blockTerminator =   static_cast<llvm::PHINode*>(phi_inst)->getIncomingBlock(n)->getTerminator();
+      assert(blockTerminator && "Block terminator is not unique or not existed");
+      for(auto i : clonelist)
+      {
+        i->insertBefore(blockTerminator);
+      }
+    }
+
+    //Remove the original instructions after cloning
+    for(auto i : worklist)
+    {
+      i->eraseFromParent();
+    }
+    phi_inst->eraseFromParent();
+  }
+
+}
+
+void IRPreprocessor::getRelatedValues(Instruction* I, BasicBlock* bb, InstPointerVector & ipv)
+{
+  Instruction* inst = nullptr;
+  for(Value *operand : I->operands())
+  {
+    if (inst = llvm::dyn_cast<Instruction>(operand))
+    {
+      if (inst->getParent() != bb || llvm::PHINode::classof(operand)) continue;
+      ipv.push_back(inst);
+      getRelatedValues(inst, bb, ipv);
+    }
+  }
+}
+
+
+
+
+

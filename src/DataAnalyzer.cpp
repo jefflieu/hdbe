@@ -225,7 +225,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                 break;
         case llvm::Instruction::Load          : writeOnly = false; break;
         case llvm::Instruction::Store         : readOnly  = false; break;
-        default : staticIndex = false; LOG_S(ERROR) <<  I->getOpcodeName() << " is not supported \n"; assert(0);
+        default : staticIndex = false; LOG_S(ERROR) <<  *I << " is not supported \n"; assert(0);
       }
     }
   }
@@ -297,7 +297,7 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
                                                 *index = 0;
                                                 break;
                                                 
-        default : staticIndex = false; LOG_S(ERROR) << memOp->getOpcodeName() << " is not supported \n";
+        default : staticIndex = false; LOG_S(ERROR) << *memOp << " is not supported \n"; assert(0);
       }
   if (Instruction::classof(basePtr)) 
     basePtr = analyzeMemoryOp(static_cast<Instruction*>(basePtr), index);

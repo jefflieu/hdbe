@@ -96,19 +96,24 @@ void IRPreprocessor::balanceCFG()
 
 }
 
-
+/*
+  The memory model of clang is not really compatible with memory model of HDL 
+  Clang sometimes muxes multiple store instructions using PHI nodes which causes 
+  the backend troubles. This function aims to reverse that optimization (Code sinking) done by clang
+  It detects the pattern and clones it, then insert the cloned block of instructions into the predecessors 
+  and removes the sunk instructions
+*/
 void IRPreprocessor::removePointerPHI()
 {
   InstPointerVector worklist;
   InstPointerVector clonelist;
-  InstPointerVector storeinst_list;
   std::map<Instruction*, Instruction*> clonemap;
   std::map<Instruction*, Instruction*> store_phi_map;
   Instruction* store_inst = nullptr;
   Instruction* phi_inst = nullptr;
-  BasicBlock* bb = nullptr;
-  llvm::SmallVector<BasicBlock*,4> predecessor_list;
 
+  //First pass find out PHI nodes that produce pointers
+  //We only support PHI-Pointer to Store instructions
   for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
   {
     for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
@@ -137,13 +142,16 @@ void IRPreprocessor::removePointerPHI()
   for(auto item : store_phi_map)
   {
     
+    //Construct the worklist which is a list of instructions related to the "Store" instruction
     store_inst = item.first;
     phi_inst = item.second;
     worklist.push_back(store_inst);
     getRelatedValues(store_inst, store_inst->getParent(), worklist);
+    
+    //Then iterate over the incoming blocks
     for(unsigned n = 0; n < static_cast<llvm::PHINode*>(phi_inst)->getNumIncomingValues(); n++){
       
-      //Making Clones
+      //For each incoming block, clone the worklist
       LOG_S(INFO) << "Cloning " << n << "\n";
       clonelist.clear();
       for(auto i : worklist)
@@ -159,7 +167,7 @@ void IRPreprocessor::removePointerPHI()
         clonemap[i] = clone;
       }  
       
-      //Making adjustment of value references
+      //Replacing references
       for(auto i : clonelist)
       {
         for (Value * value : i->operands())
@@ -170,7 +178,7 @@ void IRPreprocessor::removePointerPHI()
           } else if (llvm::PHINode::classof(value)) {
             static_cast<User*>(i)->replaceUsesOfWith(value, static_cast<llvm::PHINode*>(value)->getIncomingValue(n));
           } else {
-
+            assert(! "Weird error");
           }
         }
         LOG_S(INFO) << *i << "\n";

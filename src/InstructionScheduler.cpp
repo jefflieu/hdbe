@@ -36,7 +36,7 @@ void InstructionScheduler::schedule(Function * irFunction)
   auto &variableList   = CDI_h->variableList;
 
   LOG_START(INFO);
-  LOG_S(INFO) << irFunction->getName() << "\n";
+  LOG_S(INFO) << "Function: " << irFunction->getName() << "\n";
 
 
   LOG_S(IS_DBG) << "Assigning birth time to global variables and arguments \n";

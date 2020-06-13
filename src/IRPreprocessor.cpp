@@ -12,7 +12,7 @@
 #include "HDLUtil.hpp"
 
 #ifndef IR_PP_DBG 
-#define IR_PP_DBG 1
+#define IR_PP_DBG 9
 #endif 
 
 using namespace hdbe;
@@ -121,7 +121,7 @@ void IRPreprocessor::removePointerPHI()
       if (llvm::PHINode::classof(&(*I)) && I->getType()->isPointerTy() && I->getName().endswith(StringRef(".sink"))) 
       {
         phi_inst = static_cast<llvm::Instruction*>(&(*I));
-        LOG_S(IR_PP_DBG) << *I << " is PHINode with SINK tag\n";
+        LOG_S(INFO) << *I << " is PHINode with SINK tag\n";
         
         unsigned user_cnt = 0;
         for(User* user : I->users())

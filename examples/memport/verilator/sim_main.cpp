@@ -91,8 +91,8 @@ int main(int argc, char** argv, char** env) {
 
         if(!top->func_clk)
         {
-          top->mem_rdat = tmp_data;
-          tmp_data      = data[top->mem_addr & (kMEM_SIZE-1)];
+          top->mem_rdata = tmp_data;
+          tmp_data       = data[top->mem_raddr & (kMEM_SIZE-1)];
         }
 
         // Evaluate model

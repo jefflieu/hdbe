@@ -76,7 +76,7 @@ class HdlVariable : public HdlObject {
 
 class HdlMemory : public HdlObject {
   unsigned addrSize   = 64;
-  unsigned memorySize = 2048;
+  unsigned memorySize = 0;
   public: 
     HdlMemory(String name) : HdlObject(name) {}
     HdlMemory(Value* _irVal) : HdlObject(_irVal) {addrSize = 64;}
@@ -84,7 +84,8 @@ class HdlMemory : public HdlObject {
     InstrucionList memInstrList;
     unsigned getAddrSize() {return addrSize;}
     unsigned getMemorySize() {return memorySize;}
- 
+    void setAddrSize(unsigned s) {addrSize = s;}
+    void setMemorySize(unsigned s) {memorySize = s;}
 };
 
 class HdlCFGEdge : public HdlObject {

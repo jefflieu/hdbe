@@ -93,16 +93,16 @@ int main(int argc, char** argv, char** env) {
 
         if(!top->func_clk)
         {
-          top->a_rdat = a[a_addr & (kMEM_SIZE-1)];
-          a_addr      = top->a_addr;
-          top->b_rdat = b[b_addr & (kMEM_SIZE-1)];
-          b_addr      = top->b_addr;
+          top->a_rdata = a[a_addr & (kMEM_SIZE-1)];
+          a_addr       = top->a_raddr;
+          top->b_rdata = b[b_addr & (kMEM_SIZE-1)];
+          b_addr       = top->b_raddr;
         }
 
         if(top->func_clk)
         {
           if (top->sum_wren)
-            sum[top->sum_addr] = top->sum_wdat;
+            sum[top->sum_waddr] = top->sum_wdata;
         } 
 
         // Evaluate model

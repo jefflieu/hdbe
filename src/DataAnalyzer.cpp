@@ -186,16 +186,18 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
 
   HdlProperty property;
   llvm::Type *elementType = valuePointerTy->getType()->getPointerElementType();
-  ASSERT(elementType->getTypeID() == llvm::Type::IntegerTyID, "Not supported pointer type\n");
+  ASSERT(elementType->getTypeID() == llvm::Type::IntegerTyID ||
+         elementType->getTypeID() == llvm::Type::ArrayTyID
+        , "Not supported pointer type\n");
 
-  // if (elementType->getTypeID() == llvm::Type::ArrayTyID)
-  // {
-  //   LOG_S(DA_DBG) << " Array of type " << elementType->getArrayElementType()->getTypeID() << "\n"; 
-  //   LOG_S(DA_DBG) << " Array of size " << elementType->getArrayNumElements() << "\n"; 
-  //   assert(elementType->getArrayElementType()->getTypeID() == llvm::Type::IntegerTyID);
-  //   pointerSizeInBits = ceil(log(elementType->getArrayNumElements())/log(2));
-  //   elementType = elementType->getArrayElementType();
-  // }
+  if (elementType->getTypeID() == llvm::Type::ArrayTyID)
+  {
+    LOG_S(DA_DBG) << " Array of type " << elementType->getArrayElementType()->getTypeID() << "\n"; 
+    LOG_S(DA_DBG) << " Array of size " << elementType->getArrayNumElements() << "\n"; 
+    assert(elementType->getArrayElementType()->getTypeID() == llvm::Type::IntegerTyID);
+    pointerSizeInBits = ceil(log(elementType->getArrayNumElements())/log(2));
+    elementType = elementType->getArrayElementType();
+  }
 
   for(llvm::User * U : valuePointerTy->users())
   {
@@ -289,14 +291,16 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
   switch(memOp->getOpcode())
       {
         case llvm::Instruction::GetElementPtr : basePtr = memOp->getOperand(0);
-                                                idxPtr  = memOp->getOperand(1);
                                                 LOG_S(DA_DBG + 1) << "TypeID   : " << memOp->getType()->getTypeID() << "\n";
                                                 LOG_S(DA_DBG + 1) << "Base Ptr : " << *basePtr << " (" << basePtr << ")\n";
-                                                LOG_S(DA_DBG + 1) << "Indx Ptr : " << *idxPtr << " (" << idxPtr << ")\n";
-                                                if (llvm::ConstantInt::classof(idxPtr))
-                                                  *index = (int)((llvm::ConstantInt*)idxPtr)->getZExtValue();
-                                                else 
-                                                  *index = -1;
+                                                for (unsigned i = 1; i < memOp->getNumOperands(); i++){
+                                                  idxPtr  = memOp->getOperand(i);
+                                                  LOG_S(DA_DBG + 1) << "Indx Ptr : " << *idxPtr << " (" << idxPtr << ")\n";
+                                                  if (llvm::ConstantInt::classof(idxPtr))
+                                                    *index = (int)((llvm::ConstantInt*)idxPtr)->getZExtValue();
+                                                  else 
+                                                    *index = -1;
+                                                }
                                                 break;
 
         case llvm::Instruction::Load          : basePtr = static_cast<llvm::LoadInst*>(memOp)->getPointerOperand(); 

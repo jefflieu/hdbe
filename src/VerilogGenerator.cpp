@@ -89,17 +89,17 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
                                         break;
       case HdlVectorType::memoryType :  decl = "//Memory\n" ; 
                                         if (obj.property.stype != HdlSignalType::regType) {
-                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.arraylength, obj.name + "_addr") + end_decl;
-                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_wdat") + end_decl;
-                                          decl += VERILOG_INPUT  + VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_rdat") + end_decl;
-                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, obj.name + "_wren") + end_decl;
-                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, obj.name + "_rden");
+                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.arraylength, MEMOBJ_ADDR(obj)) + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VEC_DECL(bit, obj.property.bitwidth, MEMOBJ_WDAT(obj)) + end_decl;
+                                          decl += VERILOG_INPUT  + VERILOG_VEC_DECL(bit, obj.property.bitwidth, MEMOBJ_RDAT(obj)) + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, MEMOBJ_WREN(obj)) + end_decl;
+                                          decl += VERILOG_OUTPUT + VERILOG_VAR_DECL(bit, MEMOBJ_RDEN(obj));
                                         } else {
-                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_addr") + end_decl;
-                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_wdat") + end_decl;
-                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, obj.name + "_rdat") + end_decl;
-                                          decl += VERILOG_VAR_DECL(bit, obj.name + "_wren") + end_decl;
-                                          decl += VERILOG_VAR_DECL(bit, obj.name + "_rden");
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.arraylength, MEMOBJ_ADDR(obj)) + end_decl;
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, MEMOBJ_WDAT(obj)) + end_decl;
+                                          decl += VERILOG_VEC_DECL(bit, obj.property.bitwidth, MEMOBJ_RDAT(obj)) + end_decl;
+                                          decl += VERILOG_VAR_DECL(bit, MEMOBJ_WREN(obj)) + end_decl;
+                                          decl += VERILOG_VAR_DECL(bit, MEMOBJ_RDEN(obj));
                                         }
                                         break;
       
@@ -716,6 +716,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   String addr_mux_map = "func_clk, " + memObj.name + "_addr";
   String wdat_mux_map = "func_clk, " + memObj.name + "_wdat";
   String rden_assign;
+  String wren_assign;
   unsigned ld_cnt = 0;
   unsigned st_cnt = 0;
   char buf[256];
@@ -734,11 +735,13 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
       case llvm::Instruction::Load:
           load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + valid_tag + VERILOG_CONT_ASSIGN + memObj.name + String("_rdat") + VERILOG_ENDL;
           addr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          rden_assign  += String((ld_cnt > 0)?"|":"") + getValueHdlName((*instr_i)->getParent()) + tag0;
           ld_cnt++;
           break;
       case llvm::Instruction::Store:
-          addr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
-          wdat_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
+          addr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
+          wdat_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          wren_assign  += String((st_cnt > 0)?"|":"") + getValueHdlName((*instr_i)->getParent()) + tag0;
           st_cnt++;
           break;
       case llvm::Instruction::GetElementPtr:
@@ -757,7 +760,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
     instantiate += String(buf, size);     
     size = sprintf(buf,"%10d,", ld_cnt + st_cnt);
     instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", 64);
+    size = sprintf(buf,"%6d)", memObj.property.arraylength);
     instantiate += String(buf, size);
 
     size = sprintf(buf," Addr_of_%s ( ", memObj.name.data());
@@ -768,6 +771,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
       instantiate += ",0";
     }
     instantiate += ");\n";
+
   }
 
   if (st_cnt > 0) {
@@ -775,7 +779,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
     instantiate += String(buf, size);     
     size = sprintf(buf,"%10d,", st_cnt);
     instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", 64);
+    size = sprintf(buf,"%6d)", memObj.property.bitwidth);
     instantiate += String(buf, size);
 
     size = sprintf(buf," Wdat_of_%s ( ", memObj.name.data());
@@ -786,7 +790,16 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
       instantiate += ",0";
     }
     instantiate += ");\n";
+
+    
   }
+
+  if (ld_cnt > 0)
+    instantiate += VERILOG_ASSIGN_STATEMENT + MEMOBJ_RDEN(memObj) + VERILOG_CONT_ASSIGN + rden_assign + VERILOG_ENDL;
+  if (st_cnt > 0)
+    //Store assignment 
+    instantiate += VERILOG_ASSIGN_STATEMENT + MEMOBJ_WREN(memObj) + VERILOG_CONT_ASSIGN + wren_assign + VERILOG_ENDL;
+
 
   String ret = VERILOG_CODE_SECTION(memObj.name);
   ret += instantiate;

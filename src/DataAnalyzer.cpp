@@ -181,10 +181,22 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
   bool writeOnly = true;
   int maxIdx = 0;
   const DataLayout & DL = CDI_h->irModule->getDataLayout();
+  unsigned pointerSizeInBits = DL.getPointerSizeInBits();
+
 
   HdlProperty property;
-  ASSERT(valuePointerTy->getType()->getPointerElementType()->getTypeID() == llvm::Type::IntegerTyID, 
-    "Not supported pointer type\n");
+  llvm::Type *elementType = valuePointerTy->getType()->getPointerElementType();
+  ASSERT(elementType->getTypeID() == llvm::Type::IntegerTyID, "Not supported pointer type\n");
+
+  // if (elementType->getTypeID() == llvm::Type::ArrayTyID)
+  // {
+  //   LOG_S(DA_DBG) << " Array of type " << elementType->getArrayElementType()->getTypeID() << "\n"; 
+  //   LOG_S(DA_DBG) << " Array of size " << elementType->getArrayNumElements() << "\n"; 
+  //   assert(elementType->getArrayElementType()->getTypeID() == llvm::Type::IntegerTyID);
+  //   pointerSizeInBits = ceil(log(elementType->getArrayNumElements())/log(2));
+  //   elementType = elementType->getArrayElementType();
+  // }
+
   for(llvm::User * U : valuePointerTy->users())
   {
     LOG_S(DA_DBG) << *U << " valueID: " << U->getValueID() << "\n";    
@@ -201,7 +213,7 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
                                                   llvm::Value* val = use.get();                                      
                                                   if (val == valuePointerTy) continue; 
                                                   if (!llvm::Constant::classof(val)) {
-                                                      staticIndex = false; 
+                                                      staticIndex = false;
                                                       break;
                                                       }
                                                   else{ 
@@ -245,14 +257,14 @@ HdlProperty DataAnalyzer::analyzePointer(llvm::Value* valuePointerTy)
   property.vtype = (maxIdx < 0)? HdlVectorType::scalarType : (staticIndex? HdlVectorType::arrayType : HdlVectorType::memoryType);
   
   if (property.vtype == HdlVectorType::scalarType) {
-    property.bitwidth = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
+    property.bitwidth = elementType->getIntegerBitWidth();
     property.arraylength = 0;
   } else if (property.vtype == HdlVectorType::arrayType) {
-    property.bitwidth = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
+    property.bitwidth = elementType->getIntegerBitWidth();
     property.arraylength = maxIdx + 1;
   } else {
-    property.bitwidth    = valuePointerTy->getType()->getPointerElementType()->getIntegerBitWidth();
-    property.arraylength = DL.getPointerSizeInBits();  
+    property.bitwidth    = elementType->getIntegerBitWidth();
+    property.arraylength = pointerSizeInBits;  
   }
   property.isUnused = valuePointerTy->users().empty();
 

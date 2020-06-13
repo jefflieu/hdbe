@@ -1,14 +1,15 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/IR/InstrTypes.h"
+#include "llvm/IR/InstIterator.h"
 
 #include "ValueLifeInfo.hpp"
 #include "logging/logger.hpp"
 #include "InstructionScheduler.hpp"
 
-#ifndef  IS_DBG 
+#ifndef  IS_DBG
 #define  IS_DBG 9
-#endif  
-#define MAX_STEP 20 
+#endif
+#define MAX_STEP 20
 
 using namespace std;
 using namespace hdbe;
@@ -20,10 +21,10 @@ void InstructionScheduler::schedule() {
  this->schedule(CDI_h->irFunction);
 }
 
-void InstructionScheduler::schedule(Function * irFunction) 
+void InstructionScheduler::schedule(Function * irFunction)
 {
-  /* 
-    Map instructions to SPACE and TIME        
+  /*
+    Map instructions to SPACE and TIME
   */
 
   auto &M              = *(CDI_h->irModule);
@@ -33,13 +34,13 @@ void InstructionScheduler::schedule(Function * irFunction)
   auto &VIM            = CDI_h->valueInfoMap;
   auto &entryBlock     = *(F.begin());
   auto &variableList   = CDI_h->variableList;
-  
+
   LOG_START(INFO);
-  LOG_S(INFO) << irFunction->getName() << "\n"; 
-        
-    
-  LOG_S(IS_DBG) << "Assigning birth time to global variables and arguments \n";      
-  //Assign birth time for Global Variable 
+  LOG_S(INFO) << irFunction->getName() << "\n";
+
+
+  LOG_S(IS_DBG) << "Assigning birth time to global variables and arguments \n";
+  //Assign birth time for Global Variable
   for(auto gv_i = M.global_begin(), gv_end = M.global_end(); gv_i != gv_end; ++gv_i)
     {
       LOG_S(IS_DBG) << *gv_i << "\n" ;
@@ -47,34 +48,34 @@ void InstructionScheduler::schedule(Function * irFunction)
       ret.first->second.setBirthTime(0.0, 0.0);
     }
 
-  //Assign valid_time for Arguments:   
+  //Assign valid_time for Arguments:
   for(auto arg_i = F.arg_begin(), arg_end = F.arg_end(); arg_i != arg_end; arg_i ++ )
     {
       LOG_S(IS_DBG) << *arg_i << "\n";
       auto ret = CDI_h->addValueInfo(&*arg_i);
-      ret.first->second.setBirthTime(0.0, 0.0);     
+      ret.first->second.setBirthTime(0.0, 0.0);
     }
 
-  //Assign valid time for entry Block 
+  //Assign valid time for entry Block
   auto entryBlkInfo = CDI_h->addValueInfo(&entryBlock);
-  entryBlkInfo.first->second.setBirthTime(0.0, 0.0);  
+  entryBlkInfo.first->second.setBirthTime(0.0, 0.0);
 
 
   LOG(IS_DBG, "Collecting instructions for scheduling");
-  std::list<Instruction * > instructions;                      
-  std::map<BasicBlock *, int > bbInstrCountMap;                      
+  std::list<Instruction * > instructions;
+  std::map<BasicBlock *, int > bbInstrCountMap;
 
   for(auto bb_i = F.begin(), bb_end = F.end(); bb_i != bb_end ; ++bb_i)
   {
     LOG_S(IS_DBG) << " Block : " << bb_i->getName() << "\n";
-    
-    // Collecting all instructions in the basic block 
+
+    // Collecting all instructions in the basic block
     for(auto ins_i = bb_i->begin(), ins_end = bb_i->end(); ins_i != ins_end; ++ ins_i)
     {
 
       instructions.push_back(&*ins_i);
-      LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";   
-      
+      LOG_S(IS_DBG) << "Instruction: " << &*ins_i << "  " << *ins_i << "\n";
+
       //Assigning Valid time for constants
       for(const llvm::Use &use : ins_i->operands())
       {
@@ -82,38 +83,38 @@ void InstructionScheduler::schedule(Function * irFunction)
         if (llvm::Constant::classof(val))
         {
           auto ret = CDI_h->addValueInfo(&*val);
-          ret.first->second.setBirthTime(0.0, 0.0);  
+          ret.first->second.setBirthTime(0.0, 0.0);
         }
-      }                        
+      }
     }
   }
-  
-    //Scheduling 
+
+    //Scheduling
   LOG(IS_DBG, "Start scheduling");
 
-  uint32_t step = 0;     
-  
+  uint32_t step = 0;
+
   //Keep doing the scheduling until the list of instructions is empty
-  while( ! instructions.empty()) 
+  while( ! instructions.empty())
   {
     //Everytime we are here, we add a new time step
     stateList.push_back(HdlState(step));
-    HdlState & state  = stateList.back(); 
+    HdlState & state  = stateList.back();
 
-    /* 
-      Iterate the list and see if the instruction can be scheduled  
-      Instruction can be scheduled when all the inputs are valid 
+    /*
+      Iterate the list and see if the instruction can be scheduled
+      Instruction can be scheduled when all the inputs are valid
       Note that the inputs of an instruction is a little more than the number of operands
-      For the purpose of generating the HDL, the control information (the basicblock) is part of the input 
+      For the purpose of generating the HDL, the control information (the basicblock) is part of the input
       The basicblock itself is the OUTPUT of a branch instruction, not the input
-      We change the interpretation of inputs/outputs a bit to suit our purpose 
-      Essentially, there's not "branch" in our generated HDL but a flatten list of instructions to be executed. 
+      We change the interpretation of inputs/outputs a bit to suit our purpose
+      Essentially, there's not "branch" in our generated HDL but a flatten list of instructions to be executed.
       But the execution of the instruction is guarded by "BasicBlock" valid bit
     */
     for (auto list_i = instructions.begin(), list_end = instructions.end(); list_i != list_end;)
     {
       Instruction* I = *list_i;
-      //Get Operands           
+      //Get Operands
       float dependency_valid = step;
       LOG_S(IS_DBG + 1) << "Considering " << *I << " with opcode " << I->getOpcodeName() << "\n";
 
@@ -126,14 +127,14 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       /*
         Request information from Hardware Description/Manager block
-        The combination of latency and valid time will ultimately decide whether the instruction can be executed 
+        The combination of latency and valid time will ultimately decide whether the instruction can be executed
         Later on, this HWD will also bind the instruction to a particular hardware engine
       */
       HardwareDescription::ExecutionInfo EI = HWD.requestToSchedule(I, dependency_valid);
 
       LOG_S(IS_DBG + 1) << "Dependency valid time: " << dependency_valid << ", value valid time: " << EI.valid << "\n";
 
-      bool instructionSchedulable = (dependency_valid < (step + 1.0) && (EI.valid < step + 1.0 || EI.latency >= 1.0)); 
+      bool instructionSchedulable = (dependency_valid < (step + 1.0) && (EI.valid < step + 1.0 || EI.latency >= 1.0));
 
       //Additional check for terminator
       if (I->isTerminator())
@@ -141,13 +142,13 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       if  ( instructionSchedulable ) {
 
-        LOG_S(IS_DBG + 1) << "Instruction: " << *I << " has been scheduled \n"; 
-        LOG_S(IS_DBG + 2) << "Valid time " << EI.valid << "\n";            
+        LOG_S(IS_DBG + 1) << "Instruction: " << *I << " has been scheduled \n";
+        LOG_S(IS_DBG + 2) << "Valid time " << EI.valid << "\n";
 
         if (I->getOpcode()==llvm::Instruction::Ret)
           state.termInstruction = I;
-        else 
-          state.instructionList.push_back(I);  
+        else
+          state.instructionList.push_back(I);
 
 
         //Give birth time to OUTPUTs
@@ -164,17 +165,17 @@ void InstructionScheduler::schedule(Function * irFunction)
           VIM[I].addUseTime(step);
         }
 
-        
-        //The instruction has been scheduled, we update the operands useTime 
+
+        //The instruction has been scheduled, we update the operands useTime
         auto usedValues = getInstructionInputs(I);
         for(auto val : usedValues)
         {
-          VIM[val].addUseTime(step); 
+          VIM[val].addUseTime(step);
         }
 
-        //Finally remove instruction from work list 
+        //Finally remove instruction from work list
         list_i = instructions.erase(list_i);
-        
+
       } else {
 
         //Advance iterator to consider the next instruction in the queue
@@ -184,24 +185,24 @@ void InstructionScheduler::schedule(Function * irFunction)
 
     }
 
-    //After considering all instructions in the queue, we advance the time step   
-    step ++ ; 
-    
+    //After considering all instructions in the queue, we advance the time step
+    step ++ ;
+
     //For debugging, if we keep iterating for 20 steps and we still can't finish
-    if (step >= MAX_STEP) dumpInstructions(instructions);    
+    if (step >= MAX_STEP) dumpInstructions(instructions);
     ASSERT(step < MAX_STEP, "Something wrong in scheduling process") ;
   }
 
 
-  /* 
+  /*
     All instructions has been scheduled
   */
 
-  //Update the "last" flag 
+  //Update the "last" flag
   stateList.back().setLast(true);
 
 
-  //Remove unused variables 
+  //Remove unused variables
   for(auto var = variableList.begin(); var!=variableList.end();)
   {
     if (VIM[var->getIrValue()].useTimeList.empty()) {
@@ -210,7 +211,7 @@ void InstructionScheduler::schedule(Function * irFunction)
     } else {
       ++var;
     }
-  } 
+  }
 
   LOG_DONE(INFO);
 }
@@ -226,8 +227,8 @@ void InstructionScheduler::dumpInstructions(std::list<Instruction*> &instList)
     for(auto val : usedValues)
     {
       LOG_S(IS_DBG + 1) << *val << "\n";
-      if (VIM.count(val) == 0) {        
-        LOG_S(IS_DBG + 1) << "Not found \n"; 
+      if (VIM.count(val) == 0) {
+        LOG_S(IS_DBG + 1) << "Not found \n";
         break;
       }
       float operand_valid = VIM[val].valid.time;
@@ -238,8 +239,8 @@ void InstructionScheduler::dumpInstructions(std::list<Instruction*> &instList)
 
 bool InstructionScheduler::isBackValue(Value* v)
 {
-  //A value is a backvalue if it is used by a PHI node 
-  //And the incoming edge is a back-edge 
+  //A value is a backvalue if it is used by a PHI node
+  //And the incoming edge is a back-edge
   bool is_fed_back = false;
   if (!llvm::Instruction::classof(v)) return is_fed_back;
   for (User* user : v->users())
@@ -248,11 +249,11 @@ bool InstructionScheduler::isBackValue(Value* v)
     {
       auto phi = static_cast<llvm::PHINode*>(user);
       for(int i = 0; i<phi->getNumIncomingValues(); i++)
-        { 
+        {
           BasicBlock* bb = phi->getIncomingBlock(i);
-          Value* value = phi->getIncomingValue(i);          
+          Value* value = phi->getIncomingValue(i);
           //if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
-          if (value == v) 
+          if (value == v)
           {
             HdlCFGEdge &e = CDI_h->findCFGEdge(bb, phi->getParent());
             is_fed_back = e.isBackEdge();
@@ -271,45 +272,72 @@ float InstructionScheduler::getDependencyValidTime(Instruction* instr)
   for(auto val : usedValues)
   {
     if (VIM.count(val) == 0) {
-      dependency_valid = 1.0e6; 
-      LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n"; 
+      dependency_valid = 1.0e6;
+      LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n";
       break;
     }
     float operand_valid = VIM[val].valid.time;
-    dependency_valid = std::max<float>(dependency_valid, operand_valid); 
+    dependency_valid = std::max<float>(dependency_valid, operand_valid);
   }
-  
-  return dependency_valid;      
+
+  return dependency_valid;
 }
 
 bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float current_step)
 {
   auto &VIM            = CDI_h->valueInfoMap;
   float  dependency_valid = current_step;
-  
+
   //Additional condition for branch instruction
-  //All values must be valid before next step. 
+  //All values must be valid before next step.
   //Later scheduling algorithm can remove this restriction
-  //At the moment, instruction which is schedule on this iteration must produce value on the same iteration  
+  //At the moment, instruction which is schedule on this iteration must produce value on the same iteration
   assert(brInst->isTerminator());
 
-  BasicBlock* parentBlock     = brInst->getParent();
-
-  for(Instruction  &I : parentBlock->getInstList())
+  if (brInst->getOpcode() == llvm::Instruction::Ret)
   {
-    if ((&I) == brInst) continue;
-    if (VIM.count(&I) == 0) {
-      dependency_valid = 1.0e6;                  
-      LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n"; 
-      break;
+    for (auto iter = inst_begin(CDI_h->irFunction), E = inst_end(CDI_h->irFunction); iter != E; ++iter)
+    {
+      Instruction & I = *iter;
+      if ((&I) == brInst) continue;
+      if (VIM.count(&I) == 0) {
+        dependency_valid = 1.0e6;
+        LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
+        break;
+      }
+      dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
     }
-    dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time); 
+  } else {
+    BasicBlock* parentBlock     = brInst->getParent();
+    for(Instruction  &I : parentBlock->getInstList())
+    {
+      if ((&I) == brInst) continue;
+      // Legacy condition
+      // if (VIM.count(&I) == 0) {
+      //   dependency_valid = 1.0e6;
+      //   LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
+      //   break;
+      // }
+      // dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
+
+      //New condition, only the return instruction or the instruction is a back value is important for
+      //scheduling the branch
+      if (isBackValue((Value*)&I))
+      {
+        if (VIM.count(&I) == 0) {
+          dependency_valid = 1.0e6;
+          LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
+          break;
+        } else
+          dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
+      }
+    }
   }
   return (dependency_valid < (current_step + 1.0));
 }
 
-/* 
-  A Basicblock is schedulable when all predecessors' terminators have been scheduled 
+/*
+  A Basicblock is schedulable when all predecessors' terminators have been scheduled
 */
 bool InstructionScheduler::isBasicBlockSchedulable(BasicBlock * bb)
 {

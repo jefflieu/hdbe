@@ -68,4 +68,10 @@ end //" __name "\n")
 #define NEW_LINE       "\n"
 #define INDENT(n)      String(2*n, ' ')
 
+#define MEMOBJ_WREN(obj) (obj.name + "_wren")
+#define MEMOBJ_RDEN(obj) (obj.name + "_rden")
+#define MEMOBJ_WDAT(obj) (obj.name + "_wdat")
+#define MEMOBJ_RDAT(obj) (obj.name + "_rdat")
+#define MEMOBJ_ADDR(obj) (obj.name + "_addr")
+
 

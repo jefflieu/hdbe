@@ -712,6 +712,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
 {
   auto &variableList = CDI_h->variableList;
   auto &VIM          = CDI_h->valueInfoMap;
+  unsigned ptrSize   = CDI_h->getPointerSizeInBits();
   String GEP;
   String load_assign;
   String store_assign;
@@ -748,7 +749,13 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
           st_cnt++;
           break;
       case llvm::Instruction::GetElementPtr:
-          GEP += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + (*instr_i)->getOperand(1)->getName().str() + tag0 + VERILOG_ENDL;
+          //Very naive handling of GEP
+          GEP += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + getValueHdlName((*instr_i)->getOperand(1)) + tag0;
+          for(unsigned i = 2; i < (*instr_i)->getNumOperands(); i++)
+          {
+            GEP += "+" + getValueHdlName((*instr_i)->getOperand(i)) + tag0;
+          }
+          GEP += VERILOG_ENDL;
           break;
       default: break;
     }
@@ -759,9 +766,11 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   instantiate += GEP;
   instantiate += load_assign;
   if (ld_cnt > 0) {
-    size = sprintf(buf,"%10s #(", "MemoryAddrMux");
+    size = sprintf(buf,"%10s #(", "DataMux");
     instantiate += String(buf, size);     
-    size = sprintf(buf,"%10d,", ld_cnt + st_cnt);
+    size = sprintf(buf,"%6d,", ld_cnt);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d,", ptrSize);
     instantiate += String(buf, size); 
     size = sprintf(buf,"%6d)", memObj.property.arraylength);
     instantiate += String(buf, size);
@@ -777,10 +786,12 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   }
 
   if (st_cnt > 0) {
-    
-    size = sprintf(buf,"%10s #(", "MemoryAddrMux");
+    //Write Address mux
+    size = sprintf(buf,"%10s #(", "DataMux");
     instantiate += String(buf, size);     
-    size = sprintf(buf,"%10d,", ld_cnt + st_cnt);
+    size = sprintf(buf,"%6d,", st_cnt);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d,", ptrSize);
     instantiate += String(buf, size); 
     size = sprintf(buf,"%6d)", memObj.property.arraylength);
     instantiate += String(buf, size);
@@ -793,18 +804,21 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
       instantiate += ",0";
     }
     instantiate += ");\n";
-  
-    size = sprintf(buf,"%10s #(", "MemoryWdatMux");
+    
+    //Write data mux
+    size = sprintf(buf,"%10s #(", "DataMux");
     instantiate += String(buf, size);     
-    size = sprintf(buf,"%10d,", st_cnt);
+    size = sprintf(buf,"%6d,", st_cnt);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d,", memObj.property.bitwidth);
     instantiate += String(buf, size); 
     size = sprintf(buf,"%6d)", memObj.property.bitwidth);
     instantiate += String(buf, size);
 
-    size = sprintf(buf," Wdat_of_%s ( ", memObj.name.data());
+    size = sprintf(buf," Wdata_of_%s ( ", memObj.name.data());
     instantiate += String(buf, size);
     instantiate += wdat_mux_map;
-    for(unsigned i = st_cnt + ld_cnt; i < 16; i++)
+    for(unsigned i = st_cnt; i < 16; i++)
     {
       instantiate += ",0";
     }
@@ -819,6 +833,30 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
     //Store assignment 
     instantiate += VERILOG_ASSIGN_STATEMENT + MEMOBJ_WREN(memObj) + VERILOG_CONT_ASSIGN + wren_assign + VERILOG_ENDL;
 
+  //Write memory 
+  if (memObj.property.stype == HdlSignalType::regType)
+  {
+    //Write data mux
+    size = sprintf(buf,"%10s #(", "Memory");
+    instantiate += String(buf, size);     
+    size = sprintf(buf,"%6d,", memObj.property.arraylength);
+    instantiate += String(buf, size); 
+    size = sprintf(buf,"%6d)", memObj.property.bitwidth);
+    instantiate += String(buf, size);
+
+    size = sprintf(buf," memory_%s ( ", memObj.name.data());
+    instantiate += String(buf, size);
+    instantiate += "func_clk,";
+    instantiate += " " + MEMOBJ_WREN(memObj)  + ",";
+    instantiate += " " + MEMOBJ_WADDR(memObj) + ",";
+    instantiate += " " + MEMOBJ_WDATA(memObj) + ",";
+    
+    instantiate += " " + MEMOBJ_RDEN(memObj)  + ",";
+    instantiate += " " + MEMOBJ_RADDR(memObj) + ",";
+    instantiate += " " + MEMOBJ_RDATA(memObj);
+
+    instantiate += ");\n";
+  }
 
   String ret = VERILOG_CODE_SECTION(memObj.name);
   ret += instantiate;

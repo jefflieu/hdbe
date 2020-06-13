@@ -25,7 +25,7 @@ module DataMux #(
 );
   
   bit [InBitWidth-1:0] array [0:15];
-  bit [OutBitWidth-1:0] out;
+  bit [InBitWidth-1:0] out;
   assign array[0]  =  input0[InBitWidth]? input0[InBitWidth-1:0]:0;
   assign array[1]  =  input1[InBitWidth]? input1[InBitWidth-1:0]:0;
   assign array[2]  =  input2[InBitWidth]? input2[InBitWidth-1:0]:0;

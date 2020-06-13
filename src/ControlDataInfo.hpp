@@ -32,6 +32,7 @@ class ControlDataInfo {
   using Value       = llvm::Value;
   using BasicBlock  = llvm::BasicBlock;
   using Hashcode    = llvm::hash_code;
+  using DataLayout  = llvm::DataLayout;
 
   friend class DataAnalyzer;
   friend class VerilogGenerator;
@@ -81,6 +82,7 @@ class ControlDataInfo {
     HdlCFGEdge& findCFGEdge(BasicBlock* src, BasicBlock* dst);
     CFGEdgeVector findAllCFGEdges(BasicBlock* src, BasicBlock* dst);
     void        addCFGEdge(HdlCFGEdge& edge);
+    unsigned    getPointerSizeInBits() {const DataLayout & DL = this->irModule->getDataLayout(); return DL.getPointerSizeInBits();} 
 
     void dumpStateList();
     void dumpValueInfoMap();

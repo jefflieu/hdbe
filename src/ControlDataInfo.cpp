@@ -62,7 +62,7 @@ void ControlDataInfo::dumpStateList()
   {
       state.dump();
       if (state.isLast())
-        _log_stdout << "Latency :" << state.id + 1 << "\n";
+        _log_stdout << "Latency :" << state.id << "\n";
   }
   _log_stdout<<"---------------------------------" << "\n";
 }

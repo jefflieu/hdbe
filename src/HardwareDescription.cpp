@@ -25,13 +25,13 @@ HardwareDescription::ExecutionInfo HardwareDescription::requestToSchedule(llvm::
     case llvm::Instruction::Shl    :
     case llvm::Instruction::LShr   :
     case llvm::Instruction::AShr   : exeInfo.latency = 0.0; break; 
-    case llvm::Instruction::Add    : exeInfo.latency = 0.4; break;
+    case llvm::Instruction::Add    : exeInfo.latency = 0.33; break;
     case llvm::Instruction::Sub    : exeInfo.latency = 0.4; break;
     case llvm::Instruction::Mul    : exeInfo.latency = 0.8; break;
     case llvm::Instruction::Select : exeInfo.latency = 0.1; break;
     case llvm::Instruction::Load   : exeInfo.latency = (memOpIdx >= 0 ? 0.0 :1.0); break;
     case llvm::Instruction::Store  : exeInfo.latency = 1.0; break;
-    case llvm::Instruction::GetElementPtr  : exeInfo.latency = (memOpIdx >= 0 ? 0.0 :0.9); break;
+    case llvm::Instruction::GetElementPtr  : exeInfo.latency = (memOpIdx >= 0 ? 0.0 :0.0); break;
     case llvm::Instruction::Ret    : exeInfo.latency = 0.0; break;
     case llvm::Instruction::Switch : exeInfo.latency = 0.1; break;
     case llvm::Instruction::Br     : exeInfo.latency = 0.1; break;

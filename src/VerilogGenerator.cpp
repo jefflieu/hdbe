@@ -1,4 +1,9 @@
 
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "CodeGenerator.hpp"
 #include "VerilogTemplate.hpp"
 #include "logging/logger.hpp"
@@ -361,6 +366,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
 {
   String space(50, ' ');
   String instantiate;
+  String loop_assign;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   char buf[256];
   unsigned size = 0;
@@ -408,8 +414,10 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
         valName += tag;
         edgeName += tag;
       } else {
+        int edgeValidTime = floor(VIM[edge.getIrValue()].getValidTime());
         valName += LOOP_TAG;
         edgeName += LOOP_TAG;
+        loop_assign += INDENT(1) + VERILOG_ASSIGN_STATEMENT + valName + VERILOG_CONT_ASSIGN + getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1) + VERILOG_ENDL;
       }
 
       size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), edgeName.data(), valName.data());
@@ -424,7 +432,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
     if (i < 15) instantiate += ","; else instantiate += ");\n"; 
 
   }
-
+  instantiate += loop_assign; 
   return instantiate;  
 } 
 
@@ -502,6 +510,7 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
 Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
 {
   String assign;
+  String loop_variable_assign;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlVariable>& variableList       = CDI_h->variableList;
   std::list<HdlCFGEdge >& transitionList     = CDI_h->transitionList;
@@ -522,8 +531,9 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
       String tag0 = CYCLE_TAG(valid_time);
       String activeCycle = static_cast<Instruction*>(var_i->getIrValue())->getParent()->getName().str() + tag0;
       //if (activeCycle) variable_loop <= variable_n;
-      assign += VERILOG_IF(activeCycle) + NEW_LINE + 
-                  INDENT(1) + var_i->name + LOOP_TAG + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;      
+      //assign += VERILOG_IF(activeCycle) + NEW_LINE + 
+      //            INDENT(1) + var_i->name + LOOP_TAG + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;      
+      //loop_variable_assign += VERILOG_ASSIGN_STATEMENT + var_i->name + LOOP_TAG + VERILOG_CONT_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
     }
   }
 
@@ -544,10 +554,11 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
     if (var_i->isBackEdge())
     {
       String tag0 = "_" + std::to_string(valid_time);
-      assign += var_i->name + "_loop" + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
+      assign += var_i->name + LOOP_TAG + VERILOG_ASSIGN + var_i->name + tag0 + VERILOG_ENDL;
     }
   }
 
+  os << loop_variable_assign;
   os << VERILOG_CLKPROCESS_TOP("register_stage");
   os << assign;
   os << VERILOG_CLKPROCESS_BOTTOM("register_stage");

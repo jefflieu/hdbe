@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include <list>
 #include <string>
 #include "llvm/IR/CFG.h"

@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #pragma once 
 #include <string> 
 #include <list> 
@@ -31,10 +36,11 @@ class ValueLifeInfo {
     UseTimeListType    useTimeList;
     TimePoint          schedule;
     TimePoint          valid;
+    TimePoint          lastuse;
 
   public: 
-    ValueLifeInfo(): irValue(nullptr), schedule({-1.0}), valid({-1}) {};
-    ValueLifeInfo(Value* _val): irValue(_val), schedule({-1.0}), valid({-1}) {};
+    ValueLifeInfo(): irValue(nullptr), schedule({-1.0}), valid({-1}), lastuse({-1}) {};
+    ValueLifeInfo(Value* _val): irValue(_val), schedule({-1.0}), valid({-1}), lastuse({-1}) {};
     ~ValueLifeInfo() {};
     
     void setBirthTime(float schedule, float valid);
@@ -43,7 +49,8 @@ class ValueLifeInfo {
 
     float getScheduledTime() {return schedule.time;}
     float getValidTime() {return valid.time;}
-    float getLatestUseTime() {return useTimeList.empty()?-1:useTimeList.back().time;}
+    //float getLatestUseTime() {return useTimeList.empty()?-1:useTimeList.back().time;}
+    float getLatestUseTime() {return lastuse.time;}
     
     UseTimeListType& getUseTimeList() {return useTimeList;}
     

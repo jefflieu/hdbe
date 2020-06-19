@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "ControlDataInfo.hpp"
 #include "logging/logger.hpp"
 
@@ -55,26 +60,26 @@ void ControlDataInfo::addCFGEdge(HdlCFGEdge& edge)
 
 void ControlDataInfo::dumpStateList()
 {
-  _log_stdout<<"---------------------------------" << "\n";
-  _log_stdout<<"Schedule" << "\n";
+  LOG_S(0) << "---------------------------------" << "\n";
+  LOG_S(0) << "Schedule" << "\n";
 
   for(HdlState& state : this->stateList)
   {
       state.dump();
       if (state.isLast())
-        _log_stdout << "Latency :" << state.id << "\n";
+        LOG_S(0) << "Latency :" << state.id << "\n";
   }
-  _log_stdout<<"---------------------------------" << "\n";
+  LOG_S(0) <<"---------------------------------" << "\n";
 }
 
 
 void ControlDataInfo::dumpValueInfoMap()
 {
-  _log_stdout<<"---------------------------------" << "\n";
-  _log_stdout<<"ValueInfoMap" << "\n";
+  LOG_S(0) <<"---------------------------------" << "\n";
+  LOG_S(0) <<"ValueInfoMap" << "\n";
   for(auto item : this->valueInfoMap)
   {
-    _log_stdout << item.second.repr();
+    LOG_S(0) << item.second.repr();
   }
-  _log_stdout<<"---------------------------------" << "\n";
+  LOG_S(0) <<"---------------------------------" << "\n";
 }

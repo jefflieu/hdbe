@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "ValueLifeInfo.hpp"
 
 using namespace hdbe;
@@ -14,6 +19,7 @@ void ValueLifeInfo::setBirthTime(float schedule, float valid) {
     
 void ValueLifeInfo::addUseTime(float time) { 
   TimePoint tmp = {.time = time};
+  lastuse.time = std::max<float>(time, lastuse.time);
   useTimeList.push_back(tmp);
 }
     

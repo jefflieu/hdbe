@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "llvm/ADT/GraphTraits.h"
 #include "llvm/ADT/DepthFirstIterator.h"
 #include "llvm/Analysis/InstructionSimplify.h"
@@ -437,7 +442,7 @@ void DataAnalyzer::analyzeLoops(Module* irModule, Function* irFunction)
   LOG_START(INFO);
   LI.print(_log_stdout);
   auto loops = LI.getLoopsInPreorder();
-  _log_stdout << " Function has " << loops.size() << " loops \n";
+  LOG_S(INFO) << " Function has " << loops.size() << " loops \n";
 
   LOG_DONE(INFO);
 

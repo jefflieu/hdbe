@@ -1,3 +1,7 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
 
 #include "HardwareDescription.hpp"
 #include "DataAnalyzer.hpp"
@@ -34,7 +38,7 @@ HardwareDescription::ExecutionInfo HardwareDescription::requestToSchedule(llvm::
     case llvm::Instruction::GetElementPtr  : exeInfo.latency = (memOpIdx >= 0 ? 0.0 :0.0); break;
     case llvm::Instruction::Ret    : exeInfo.latency = 0.0; break;
     case llvm::Instruction::Switch : exeInfo.latency = 0.1; break;
-    case llvm::Instruction::Br     : exeInfo.latency = 0.1; break;
+    case llvm::Instruction::Br     : exeInfo.latency = 0.0; break;
     case llvm::Instruction::PHI    : exeInfo.latency = 0.1; break;
     default: exeInfo.latency = -1.0; break;
   }

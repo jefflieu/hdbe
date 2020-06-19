@@ -2,7 +2,7 @@
 #include "binary_search.h"
 
 
-_Bool __attribute__((noinline)) binary_search(u32* mem, u32 data, u16 size, u16* match_idx)
+_Bool binary_search(u32* mem, u32 data, u16 size, u16* match_idx)
 {
   u16 idx = size/2;
   u16 upper = size-1;

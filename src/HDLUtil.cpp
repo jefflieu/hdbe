@@ -1,3 +1,7 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
 
 #include "HDLUtil.hpp"
 

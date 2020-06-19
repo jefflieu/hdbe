@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "llvm/ADT/Twine.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/InstIterator.h"
@@ -159,11 +164,13 @@ void InstructionScheduler::schedule(Function * irFunction)
           ret.first->second.setBirthTime(step, EI.valid);
         }
 
-        //When a value is fed back in a loop, we artificially add use time = produced time
-        if (isBackValue(static_cast<Value*>(I))) {
-          LOG_S(INFO) << *I << "is a back value\n";
-          VIM[I].addUseTime(step);
-        }
+        //When a value is fed back in a loop, we artificially add use time = valid time
+        // if (isBackValue(static_cast<Value*>(I))) {
+        //   LOG_S(INFO) << *I << "is a back value\n";
+        //   VIM[I].addUseTime(floor(EI.valid));
+        // }
+        if (I->isTerminator())
+          updateBackValueUseTime(I);
 
 
         //The instruction has been scheduled, we update the operands useTime
@@ -252,15 +259,18 @@ bool InstructionScheduler::isBackValue(Value* v)
         {
           BasicBlock* bb = phi->getIncomingBlock(i);
           Value* value = phi->getIncomingValue(i);
-          //if (value == v && bb == (static_cast<llvm::Instruction*>(v))->getParent()) is_fed_back = true;
+          //LOG_S(INFO) << bb << " vs " << static_cast<Instruction*>(value)->getParent() << "\n";
           if (value == v)
           {
             HdlCFGEdge &e = CDI_h->findCFGEdge(bb, phi->getParent());
             is_fed_back = e.isBackEdge();
+            //Final condition check if the value is BackValue 
+            ASSERT(((!is_fed_back) || bb == (static_cast<Instruction*>(value)->getParent())), "Not supported control structure\n"); 
           }
         }
     }
   }
+
   return is_fed_back;
 }
 
@@ -289,13 +299,11 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
   float  dependency_valid = current_step;
 
   //Additional condition for branch instruction
-  //All values must be valid before next step.
-  //Later scheduling algorithm can remove this restriction
-  //At the moment, instruction which is schedule on this iteration must produce value on the same iteration
   assert(brInst->isTerminator());
 
   if (brInst->getOpcode() == llvm::Instruction::Ret)
   {
+    //For a return instruction, all other values must be valid before the Return instruction is scheduled.
     for (auto iter = inst_begin(CDI_h->irFunction), E = inst_end(CDI_h->irFunction); iter != E; ++iter)
     {
       Instruction & I = *iter;
@@ -312,24 +320,23 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
     for(Instruction  &I : parentBlock->getInstList())
     {
       if ((&I) == brInst) continue;
-      // Legacy condition
-      // if (VIM.count(&I) == 0) {
-      //   dependency_valid = 1.0e6;
-      //   LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
-      //   break;
-      // }
-      // dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
-
-      //New condition, only the return instruction or the instruction is a back value is important for
-      //scheduling the branch
+    
+      //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
+      //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
+      //This makes it fail if the loop has complex control flow and the backvalue is not in the latch block
+      //This condition is trapped by the ASSERTION in the isBackValue calculation
       if (isBackValue((Value*)&I))
       {
         if (VIM.count(&I) == 0) {
           dependency_valid = 1.0e6;
           LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
           break;
-        } else
-          dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
+        } else {
+          auto valid = ceil(VIM[&I].valid.time) - 1.0;
+          dependency_valid = std::max<float>(dependency_valid, valid);
+          LOG_S(INFO) << "Back value" << I << "\n";
+          LOG_S(INFO) << "Valid time " << VIM[&I].valid.time << " " << valid << "\n";
+        }
       }
     }
   }
@@ -353,6 +360,23 @@ bool InstructionScheduler::isBasicBlockSchedulable(BasicBlock * bb)
   return true;
 }
 
+
+void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
+{
+  BasicBlock* parentBlock     = brInst->getParent();
+  auto &VIM            = CDI_h->valueInfoMap;
+  for(Instruction  &I : parentBlock->getInstList())
+  {
+    if ((&I) == brInst) continue;
+    if (isBackValue((Value*)&I))
+    {
+      assert(VIM.count(&I) > 0);
+      auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
+      VIM[&I].addUseTime(use_time);
+      LOG_S(INFO) << "Updated use time of back value: " << I.getName() << " --> " << use_time << "\n";
+    }
+  }
+}
 
 
 

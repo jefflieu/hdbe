@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #pragma once 
 #include <string> 
 #include <list> 
@@ -28,6 +33,7 @@ class InstructionScheduler {
     bool isBranchSchedulable(Instruction * brInst, float current_step);
     bool isBasicBlockSchedulable(BasicBlock * bb);
     float getDependencyValidTime(Instruction* instr);
+    void updateBackValueUseTime(Instruction* instr);
 
 
   public: 

@@ -1,3 +1,8 @@
+/*
+  Copyright 2020 
+  Jeff Lieu <lieumychuong@gmail.com>
+*/
+
 #include "llvm/IR/CFG.h"
 
 #include "IRUtil.hpp"

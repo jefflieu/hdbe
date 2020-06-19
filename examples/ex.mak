@@ -36,4 +36,5 @@ all: sim
 clean: 
 	-rm *.ll -rf
 	-rm *.sv -rf
+	-rm *.txt -rf
 	-rm $(SIM_BLD) -rf

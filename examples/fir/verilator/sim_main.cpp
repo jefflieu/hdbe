@@ -62,14 +62,15 @@ int main(int argc, char** argv, char** env) {
     top->coef[7] = coef[7];
 
     
-    const int kCALLS         = 10;
+    const int kCALLS         = 100;
+    const int kSTART_TIME    = 10;
     const int kCLK_PER_CALL  = 1;
     int calls = 0, returns = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
     int simErrors = -1;
 
-    while (! (top->func_done and returns == kCALLS) ) {
+    while (true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -77,14 +78,21 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= 4) {
-            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
-            top->din   = rand();  
-           if (top->func_start)
+        if (!top->func_clk && main_time >= kSTART_TIME) {
+          top->func_start = ( calls<kCALLS && (((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0));  // Assert function call
+          top->din   = rand();  
+          if (top->func_start)
             {
               Reference[calls] = fir(top->din, coef);
               calls++;
             } 
+        }
+
+        //Sampling
+        if (top->func_done && top->func_clk) {
+          Returns[returns] = top->func_ret;
+          returns++;
+          if (returns == kCALLS) break;
         }
 
         // Evaluate model
@@ -92,11 +100,6 @@ int main(int argc, char** argv, char** env) {
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
-
-        if (top->func_done && top->func_clk) {
-          Returns[returns] = top->func_ret;
-          returns++;
-        }
 
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x func_start=%x func_done = %x func_ret = %d \n",

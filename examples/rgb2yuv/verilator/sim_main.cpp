@@ -77,6 +77,7 @@ int main(int argc, char** argv, char** env) {
     top->coef[8] = coef[8];
   
     const int kCALLS         = 10;
+    const int kSTART_TIME    = 10;
     const int kCLK_PER_CALL  = 1;
     int calls = 0, returns = 0;
     s16 Reference[kCALLS*3];
@@ -85,8 +86,7 @@ int main(int argc, char** argv, char** env) {
     int simErrors = -1;
    
     //VL_PRINTF("Expected value %d\n", ref);
-
-    while (! (top->func_done and returns == kCALLS) ) {
+    while(true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -94,8 +94,9 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= 4) {
-            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call
+        if (!top->func_clk) {
+          if (main_time >= kSTART_TIME) {
+            top->func_start = ( calls<kCALLS && ( ((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0) );  // Assert function call
             top->rgb[0]   = rand();
             top->rgb[1]   = rand();
             top->rgb[2]   = rand();
@@ -104,6 +105,7 @@ int main(int argc, char** argv, char** env) {
               rgb2yuv(top->rgb, coef, &Reference[calls*3]);
               calls += 1;
             } 
+          }
         }
 
         // Evaluate model
@@ -116,12 +118,15 @@ int main(int argc, char** argv, char** env) {
           Returns[returns*3 + 1] = top->yuv[1];
           Returns[returns*3 + 2] = top->yuv[2];
           returns ++;
+          if (returns == kCALLS) break;
         }
 
         // Read outputs
-        VL_PRINTF("[%" VL_PRI64 "d] clk=%x func_start=%x func_done = %x func_ret = %d \n",
-                  main_time, top->func_clk, top->func_start, top->func_done, top->func_ret);
-    }
+        //VL_PRINTF("[%" VL_PRI64 "d] clk=%x func_start=%x func_done = %x func_ret = %d \n",
+        //          main_time, top->func_clk, top->func_start, top->func_done, top->func_ret);
+    
+    };
+
     // Final model cleanup
     top->final();
     //Check

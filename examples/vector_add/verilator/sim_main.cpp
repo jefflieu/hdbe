@@ -57,7 +57,7 @@ int main(int argc, char** argv, char** env) {
     const int kCLK_PER_CALL  = 1e9;
     const int kMEM_SIZE      = SIZE;
     const int kSTART_TIME    = 10;
-    int calls = 0, returns = 0;
+    int calls = 0, returns = 0, done = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
     int simErrors = -1;
@@ -74,7 +74,7 @@ int main(int argc, char** argv, char** env) {
 
     vector_add(a, b, sum_ref);
 
-    while (! (top->func_done and returns == kCALLS) ) {
+    while (true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -82,40 +82,42 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= kSTART_TIME) {
-            top->func_start = ( (calls<kCALLS) && ( ((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0) || top->func_done) ? 1 : 0;  // Assert function call
-
+        if (!top->func_clk) { 
+          if (main_time >= kSTART_TIME) {
+            top->func_start = (calls < kCALLS && ((main_time == kSTART_TIME) || done));
             if (top->func_start)
             {
               calls++;
             } 
+          }
         }
-
-        if(!top->func_clk)
-        {
-          top->a_rdata = a[a_addr & (kMEM_SIZE-1)];
-          a_addr       = top->a_raddr;
-          top->b_rdata = b[b_addr & (kMEM_SIZE-1)];
-          b_addr       = top->b_raddr;
-        }
-
+        
+        //Sampling 
         if(top->func_clk)
         {
+          a_addr       = top->a_raddr;
+          b_addr       = top->b_raddr;
+
           if (top->sum_wren)
             sum[top->sum_waddr] = top->sum_wdata;
+          if (top->func_done) 
+            returns ++;
+          done = top->func_done;
+          if (returns == kCALLS) break;
         } 
-
         // Evaluate model
         // (If you have multiple models being simulated in the same
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
 
-        
-        if (top->func_done && top->func_clk) 
+        //Drive
+        if(top->func_clk)
         {
-          returns++;
+          top->a_rdata = a[a_addr & (kMEM_SIZE-1)];
+          top->b_rdata = b[b_addr & (kMEM_SIZE-1)];
         }
+
 
     }
     // Final model cleanup

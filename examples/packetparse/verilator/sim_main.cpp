@@ -76,6 +76,7 @@ int main(int argc, char** argv, char** env) {
     u16 ref_eth_type, ref_eth_length;
 
     const int kCALLS         = 20;
+    const int kSTART_TIME    = 10;
     const int kCLK_PER_CALL  = 1;
     const int kPKT_LENGTH    = 20;
     int calls = 0, returns = 0;
@@ -93,8 +94,9 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= 4) {
-            top->func_start = ( (calls<kCALLS) && ( (main_time >> 1) % kCLK_PER_CALL == 0) ) ? 1 : 0;  // Assert function call 
+        if (!top->func_clk) {
+          if (main_time >= kSTART_TIME) {
+            top->func_start = ( calls<kCALLS && ( ((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0) );  // Assert function call 
             top->pktdata    = packet_data[word_cnt];
             top->sop        = word_cnt == 0?1:0;
             top->eop        = word_cnt == kPKT_LENGTH-1?1:0;
@@ -104,6 +106,7 @@ int main(int argc, char** argv, char** env) {
               calls++;
               word_cnt++;
             } 
+          }
         }
 
         // Evaluate model
@@ -116,7 +119,6 @@ int main(int argc, char** argv, char** env) {
           if (top->mac_src_valid) CHECK(top->mac_src[0] == ref_src_mac, "MAC ADDRESS MISMATCH");
           if (top->eth_length_valid) CHECK(top->eth_length[0] == ref_eth_length, "ETH TYPE MISMATCH");
           if (top->eth_type_valid  ) CHECK(top->eth_type[0] == ref_eth_type, "ETH LENGTH MISMATCH");
-
         }
 
         // Read outputs
@@ -125,13 +127,7 @@ int main(int argc, char** argv, char** env) {
     }
     // Final model cleanup
     top->final();
-
-    //Check
-    simErrors = 0;
-    for(uint32_t chk = 0; chk < kCALLS; chk++)
-    {
-      //if (Reference[chk] != Returns[chk]) simErrors++;
-    }
+    
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
 
 

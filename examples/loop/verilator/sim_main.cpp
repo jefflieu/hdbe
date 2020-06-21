@@ -19,6 +19,7 @@ double sc_time_stamp() {
 
 #include "loop.h"
 
+
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
 
@@ -53,14 +54,16 @@ int main(int argc, char** argv, char** env) {
     top->n = 1;
 
     const int kCALLS         = 10;
-    const int kCLK_PER_CALL  = 33;
+    const int kSTART_TIME    = 10;
+    const int kCLK_PER_CALL  = 1e9;
     int calls = 0, returns = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
     int simErrors = -1;
+    int done = 0;
     //VL_PRINTF("Expected value %d\n", ref);
 
-    while (! (top->func_done and returns == kCALLS) ) {
+    while (true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -68,14 +71,27 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= 4) {
-            top->func_start = ( (calls<kCALLS) && ( ((main_time >> 1) % kCLK_PER_CALL) == 0) ) ? 1 : 0;  // Assert function call
+        if (!top->func_clk) {
+          if ( main_time >= kSTART_TIME) {
+            top->func_start = (calls < kCALLS && ((main_time == kSTART_TIME) || done));
             top->n   = rand() % 16;  
             if (top->func_start)
             {
               Reference[calls] = loop(top->n);
+              VL_PRINTF("%d -> %d \n", top->n, Reference[calls]);
               calls++;
             } 
+          }
+        }
+
+        //Sampling
+        if (top->func_clk) {
+          if (top->func_done) {
+            Returns[returns] = top->func_ret;
+            returns++;
+          }
+          done = top->func_done;
+          if (returns == kCALLS) break;
         }
 
         // Evaluate model
@@ -83,10 +99,6 @@ int main(int argc, char** argv, char** env) {
         // timestep then instead of eval(), call eval_step() on each, then
         // eval_end_step() on each.)
         top->eval();
-        if (top->func_done && top->func_clk) {
-          Returns[returns] = top->func_ret;
-          returns++;
-        }
 
         // Read outputs
         VL_PRINTF("[%" VL_PRI64 "d] clk=%x func_start=%x func_done = %x func_ret = %d (progress %d)\n",

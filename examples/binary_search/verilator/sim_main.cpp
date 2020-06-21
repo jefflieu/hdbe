@@ -66,6 +66,7 @@ int main(int argc, char** argv, char** env) {
     int simErrors = -1;
     u16 sorted_data[kMEM_SIZE];
     u16 mem_raddr;
+    int done = 0;
     for(int i = 0; i < kMEM_SIZE; i++)
     {
       sorted_data[i] = rand();
@@ -79,7 +80,7 @@ int main(int argc, char** argv, char** env) {
 
     //VL_PRINTF("Expected value %d\n", ref);
 
-    while ( returns != kCALLS) {
+    while (true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -88,8 +89,7 @@ int main(int argc, char** argv, char** env) {
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
         if (!top->func_clk && main_time >= kSTART_TIME) {
-            top->func_start = ( calls<kCALLS && ((((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0) || top->func_done)) ? 1 : 0;  // Assert function call
-
+            top->func_start = (calls < kCALLS && ((main_time == kSTART_TIME) || done));
             if (top->func_start)
             {
               u16 idx = rand() % (kMEM_SIZE + 1);
@@ -97,7 +97,8 @@ int main(int argc, char** argv, char** env) {
               top->size = kMEM_SIZE;
               match_result_ref[calls] = binary_search(sorted_data, top->data, kMEM_SIZE, &match_idx_ref[calls]);
               calls++;
-            } 
+            }
+            done = top->func_done; 
         }
 
         //Sampling
@@ -112,6 +113,7 @@ int main(int argc, char** argv, char** env) {
             match_result[returns] = top->func_ret;
             returns++;
           }
+          if (returns == kCALLS) break;
         }
        
 

@@ -57,19 +57,20 @@ int main(int argc, char** argv, char** env) {
     const int kCLK_PER_CALL  = 1e9;
     const int kMEM_SIZE      = 128;
     const int kSTART_TIME    = 10;
-    int calls = 0, returns = 0;
+    int calls = 0, returns = 0, done = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
     int simErrors = -1;
     u16 data[kMEM_SIZE];
-    u16 tmp_data;
+    u16 mem_raddr;
+
     for(int i = 0; i < kMEM_SIZE; i++)
     {
       data[i] = rand();
     }
     //VL_PRINTF("Expected value %d\n", ref);
 
-    while (! (top->func_done and returns == kCALLS) ) {
+    while (true) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -77,9 +78,9 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= kSTART_TIME) {
-            top->func_start = ( (calls<kCALLS) && ( ((main_time - kSTART_TIME) >> 1) % kCLK_PER_CALL == 0) || top->func_done) ? 1 : 0;  // Assert function call
-
+        if (!top->func_clk) { 
+          if (main_time >= kSTART_TIME) {
+            top->func_start = (calls < kCALLS && ((main_time == kSTART_TIME) || done));
             if (top->func_start)
             {
               top->data = data[rand() & (kMEM_SIZE - 1)];//Search value
@@ -87,13 +88,22 @@ int main(int argc, char** argv, char** env) {
               Reference[calls] = memport(data, top->data, top->size);
               calls++;
             } 
+          }
         }
 
-        if(!top->func_clk)
+        //Sampling
+        if (top->func_clk)
         {
-          top->mem_rdata = tmp_data;
-          tmp_data       = data[top->mem_raddr & (kMEM_SIZE-1)];
+          mem_raddr  = top->mem_raddr; 
+          
+          if (top->func_done) {
+            Returns[returns] = top->func_ret;
+            returns++;
+          }
+          done = top->func_done;
+          if (returns == kCALLS) break;
         }
+       
 
         // Evaluate model
         // (If you have multiple models being simulated in the same
@@ -101,10 +111,10 @@ int main(int argc, char** argv, char** env) {
         // eval_end_step() on each.)
         top->eval();
 
-        if (top->func_done && top->func_clk) 
+        //Drive
+        if(top->func_clk)
         {
-          Returns[returns] = top->func_ret;
-          returns++;
+          top->mem_rdata = data[mem_raddr % kMEM_SIZE];
         }
 
         // Read outputs
@@ -118,7 +128,10 @@ int main(int argc, char** argv, char** env) {
     simErrors = 0;
     for(uint32_t chk = 0; chk < kCALLS; chk++)
     {
-      if (Reference[chk] != Returns[chk]) simErrors++;
+      if (Reference[chk] != Returns[chk]) { 
+        simErrors++;
+        VL_PRINTF("Error at %d, %x vs %x\n", chk, Reference[chk], Returns[chk]);
+      }
     }
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
 

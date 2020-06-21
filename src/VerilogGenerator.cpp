@@ -410,13 +410,18 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
       HdlCFGEdge& edge = CDI_h->findCFGEdge(blk, phi->getParent());
       String edgeName = edge.getName().str();
       String valName = getValueHdlName(val);
+      
       if (!edge.isBackEdge()) {
-        valName += tag;
         edgeName += tag;
+      } else {
+        edgeName += LOOP_TAG;
+      }
+      //The only way to query if Value is a BackValue here is using combination of this condition
+      if (!edge.isBackEdge() || !llvm::Instruction::classof(val)) {
+        valName += tag;
       } else {
         int edgeValidTime = floor(VIM[edge.getIrValue()].getValidTime());
         valName += LOOP_TAG;
-        edgeName += LOOP_TAG;
         loop_assign += INDENT(1) + VERILOG_ASSIGN_STATEMENT + valName + VERILOG_CONT_ASSIGN + getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1) + VERILOG_ENDL;
       }
 

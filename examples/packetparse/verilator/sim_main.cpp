@@ -82,7 +82,7 @@ int main(int argc, char** argv, char** env) {
     int calls = 0, returns = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
-    int simErrors = -1;
+    int simErrors = 0;
     int word_cnt = 0;
     //VL_PRINTF("Expected value %d\n", ref);
 
@@ -127,7 +127,7 @@ int main(int argc, char** argv, char** env) {
     }
     // Final model cleanup
     top->final();
-    
+        
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
 
 

@@ -14,8 +14,8 @@ SIM_BLD := sim
 %.sv : %.ll
 	$(HDBE) $^ $*
 
-%.ll : %.c %.h
-	$(CLANG) $(CLANG_FLAGS) -o $@ $<
+%.ll : %.c
+	$(CLANG) $(CLANG_FLAGS) -o $@ $^
 
 $(SIM_BLD)/sim: $(SRCS:.c=.sv) sim/Makefile
 	make -C $(SIM_BLD)

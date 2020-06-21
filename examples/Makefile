@@ -1,6 +1,7 @@
 
 
-EXAMPLES  :=counter fir shiftreg input_array rgb2yuv \
+EXAMPLES  :=counter fir shiftreg input_array \
+             rgb2yuv rgb2yuv_14\
               ctrlflow packetparse \
                 loop memport vector_add stack binary_search
 VCD_FILE  :=sim/logs/vlt_dump.vcd

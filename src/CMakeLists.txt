@@ -3,7 +3,6 @@ project(hdbe)
 
 find_package(LLVM REQUIRED CONFIG)
 
-set(dep_root ../..)
 set(hdlbe_src ../src/)
 
 
@@ -17,7 +16,7 @@ message(STATUS "Using LLVM_DEFINITIONS   : ${LLVM_DEFINITIONS}")
 # you will need to enable C++11 support
 # for your compiler.
 
-include_directories(${LLVM_INCLUDE_DIRS} ${dep_root} ${hdlbe_src})
+include_directories(${LLVM_INCLUDE_DIRS} ${hdlbe_src})
 add_definitions(${LLVM_DEFINITIONS})
 add_definitions(-DLOGURU_WITH_STREAMS=1)
 

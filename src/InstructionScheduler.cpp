@@ -265,7 +265,7 @@ bool InstructionScheduler::isBackValue(Value* v)
             HdlCFGEdge &e = CDI_h->findCFGEdge(bb, phi->getParent());
             is_fed_back = e.isBackEdge();
             //Final condition check if the value is BackValue 
-            ASSERT(((!is_fed_back) || bb == (static_cast<Instruction*>(value)->getParent())), "Not supported control structure\n"); 
+            //ASSERT(((!is_fed_back) || bb == (static_cast<Instruction*>(value)->getParent())), "Not supported control structure\n"); 
           }
         }
     }
@@ -316,26 +316,40 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
       dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
     }
   } else {
+    /* This whole block of code is concerned of a branch instruction that loops back 
+    to the loop header. So it traces the back value associated with the backedge 
+    and decide when the backedge can be done */ 
+    LoopInfo &LI = CDI_h->LI;
     BasicBlock* parentBlock     = brInst->getParent();
-    for(Instruction  &I : parentBlock->getInstList())
-    {
-      if ((&I) == brInst) continue;
-    
-      //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
-      //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
-      //This makes it fail if the loop has complex control flow and the backvalue is not in the latch block
-      //This condition is trapped by the ASSERTION in the isBackValue calculation
-      if (isBackValue((Value*)&I))
+    llvm::Loop *loop = LI.getLoopFor(parentBlock);
+    bool isLoopLatch = false;
+    if (loop != nullptr) isLoopLatch = loop->isLoopLatch(parentBlock);
+    if (isLoopLatch) {
+      BasicBlock* header  = loop->getHeader();
+      //Iterate Phis of header 
+      for(Instruction &I : header->getInstList())
       {
-        if (VIM.count(&I) == 0) {
-          dependency_valid = 1.0e6;
-          LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
-          break;
-        } else {
-          auto valid = ceil(VIM[&I].valid.time) - 1.0;
-          dependency_valid = std::max<float>(dependency_valid, valid);
-          LOG_S(INFO) << "Back value" << I << "\n";
-          LOG_S(INFO) << "Valid time " << VIM[&I].valid.time << " " << valid << "\n";
+        llvm::PHINode * phiInst;
+        if (phiInst = llvm::dyn_cast<llvm::PHINode>(&I)) {
+          for(unsigned i = 0; i < phiInst->getNumIncomingValues(); i++)
+          {        
+            //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
+            //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
+            if (phiInst->getIncomingBlock(i) == parentBlock)
+            {
+              Value* val = phiInst->getIncomingValue(i);
+              if (VIM.count(val) == 0) {
+                dependency_valid = 1.0e6;
+                LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n";
+                break;
+              } else {
+                auto valid = ceil(VIM[val].valid.time) - 1.0;
+                dependency_valid = std::max<float>(dependency_valid, valid);
+                LOG_S(INFO) << "Back value " << val->getName() << "\n";
+                LOG_S(INFO) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
+              }
+            }
+          }
         }
       }
     }
@@ -363,19 +377,47 @@ bool InstructionScheduler::isBasicBlockSchedulable(BasicBlock * bb)
 
 void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
 {
-  BasicBlock* parentBlock     = brInst->getParent();
-  auto &VIM            = CDI_h->valueInfoMap;
-  for(Instruction  &I : parentBlock->getInstList())
-  {
-    if ((&I) == brInst) continue;
-    if (isBackValue((Value*)&I))
+  BasicBlock* parentBlock = brInst->getParent();
+  auto &VIM               = CDI_h->valueInfoMap;
+  LoopInfo &LI            = CDI_h->LI;
+  llvm::Loop *loop        = LI.getLoopFor(parentBlock);
+  bool isLoopLatch        = false;
+  if (loop != nullptr) isLoopLatch = loop->isLoopLatch(parentBlock);
+  if (isLoopLatch) {
+    BasicBlock* header  = loop->getHeader();
+    //Iterate Phis of header 
+    for(Instruction &I : header->getInstList())
     {
-      assert(VIM.count(&I) > 0);
-      auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
-      VIM[&I].addUseTime(use_time);
-      LOG_S(INFO) << "Updated use time of back value: " << I.getName() << " --> " << use_time << "\n";
+      llvm::PHINode * phiInst;
+      if (phiInst = llvm::dyn_cast<llvm::PHINode>(&I)) {
+        for(unsigned i = 0; i < phiInst->getNumIncomingValues(); i++)
+        {        
+          //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
+          //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
+          if (phiInst->getIncomingBlock(i) == parentBlock)
+          {
+            Value* val = phiInst->getIncomingValue(i);
+            assert(VIM.count(val) > 0);
+            auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
+            VIM[val].addUseTime(use_time);
+            LOG_S(INFO) << "Updated use time of back value: " << val->getName() << " --> " << use_time << "\n";
+          }
+        }
+      }
     }
   }
+
+  // for(Instruction  &I : parentBlock->getInstList())
+  // {
+  //   if ((&I) == brInst) continue;
+  //   if (isBackValue((Value*)&I))
+  //   {
+  //     assert(VIM.count(&I) > 0);
+  //     auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
+  //     VIM[&I].addUseTime(use_time);
+  //     LOG_S(INFO) << "Updated use time of back value: " << I.getName() << " --> " << use_time << "\n";
+  //   }
+  // }
 }
 
 

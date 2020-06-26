@@ -26,6 +26,7 @@ class InstructionScheduler {
   using Twine       = llvm::Twine;
   using Value       = llvm::Value;
   using User        = llvm::User;
+  using LoopInfo    = llvm::LoopInfo;
 
   private: 
     ControlDataInfo *CDI_h;

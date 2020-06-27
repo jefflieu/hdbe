@@ -7,6 +7,8 @@
 #include "DataAnalyzer.hpp"
 #include "HdlObject.hpp"
 
+#define HWD_DBG 9
+
 using namespace hdbe;
 
 #define PACK(max, cnt) ((max & 0xffff) << 16 | cnt )
@@ -36,7 +38,7 @@ void HardwareDescription::nextStep()
     unsigned max = UNPACK_MAX(item.second);
     if (cnt < max) cnt++;
     item.second = PACK(max, cnt);
-    LOG_S(INFO) << "Next step " << item.second << "\n";
+    //LOG_S(INFO) << "Next step " << item.second << "\n";
   }
 }
 
@@ -51,7 +53,7 @@ void HardwareDescription::updateHWResources(llvm::Instruction* instruction)
     res_id  = hashInstructionToResourceID(instruction->getOpcode(), uniqueID); 
     if (RM.count(res_id) > 0) {
       RM[res_id]--;
-      LOG_S(INFO) << "Updated hw resources of " << basePtr->getName() << " " << RM[res_id] << "\n";
+      LOG_S(HWD_DBG) << "Updated hw resources of " << basePtr->getName() << " " << RM[res_id] << "\n";
     }
   }
 }
@@ -59,17 +61,19 @@ void HardwareDescription::updateHWResources(llvm::Instruction* instruction)
 HardwareDescription::ExecutionInfo HardwareDescription::requestToSchedule(llvm::Instruction* instruction, float latest_dependency)
 {
   int memOpIdx;
-  Value* basePtr;
+  Value* basePtr = nullptr;
   ExecutionInfo exeInfo;
-  unsigned res_id;
+  unsigned res_id = 0;
   if (isMemoryInstruction(instruction)) {
     basePtr = DataAnalyzer::analyzeMemoryOp(instruction, &memOpIdx);
     res_id  = hashInstructionToResourceID(instruction->getOpcode(), (unsigned)reinterpret_cast<uintptr_t>(basePtr)); 
     if (instruction->getOpcode() == llvm::Instruction::Load || instruction->getOpcode() == llvm::Instruction::Store)
     {
-      exeInfo.hw_available = UNPACK_CNT(RM[res_id]) > 0;
-      LOG_S(INFO) << "Request to schedule " << *instruction << "\n";
-      LOG_S(INFO) << "Resource is " << exeInfo.hw_available << " " << RM[res_id] << "\n";
+      if (RM.count(res_id) > 0) {
+        exeInfo.hw_available = UNPACK_CNT(RM[res_id]) > 0;
+        LOG_S(HWD_DBG) << "Request to schedule " << *instruction << " basePtr " << basePtr << "\n";
+        LOG_S(HWD_DBG) << "Resource " << res_id << " availability: " << RM[res_id] << "\n";
+      }
     }
   }
   switch(instruction->getOpcode()) 

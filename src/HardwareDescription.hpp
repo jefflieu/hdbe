@@ -41,7 +41,7 @@ class HardwareDescription {
     bool initializeHWResources();
     void nextStep();
     void updateHWResources(llvm::Instruction* inst);
-    unsigned hashInstructionToResourceID(unsigned opcode, unsigned uniqueID) { return static_cast<unsigned>((uniqueID << 6) + opcode & 0x3f); };
+    unsigned hashInstructionToResourceID(unsigned opcode, unsigned uniqueID) { return (uniqueID  << 6) + (opcode & 0x3f); };
 };
 
 }

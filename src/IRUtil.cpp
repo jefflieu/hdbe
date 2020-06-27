@@ -127,8 +127,10 @@ hdbe::ValuePtrVector hdbe::getInstructionOutputs(Instruction* I)
             VPV.push_back(I->getOperand(1));
           if (! isBackEdge(static_cast<llvm::BranchInst*>(I)->getParent(), static_cast<llvm::BasicBlock*>(I->getOperand(2))))
             VPV.push_back(I->getOperand(2));
-        } else 
-          VPV.push_back(I->getOperand(0));
+        } else { 
+          if (! isBackEdge(static_cast<llvm::BranchInst*>(I)->getParent(), static_cast<llvm::BasicBlock*>(I->getOperand(0))))
+            VPV.push_back(I->getOperand(0));
+        }
         break;
     case llvm::Instruction::Switch  : 
         assert(llvm::SwitchInst::classof(I));

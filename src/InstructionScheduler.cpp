@@ -94,6 +94,7 @@ void InstructionScheduler::schedule(Function * irFunction)
     }
   }
 
+  HWD.initializeHWResources();
     //Scheduling
   LOG(IS_DBG, "Start scheduling");
 
@@ -139,7 +140,7 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       LOG_S(IS_DBG + 1) << "Dependency valid time: " << dependency_valid << ", value valid time: " << EI.valid << "\n";
 
-      bool instructionSchedulable = (dependency_valid < (step + 1.0) && (EI.valid < step + 1.0 || EI.latency >= 1.0));
+      bool instructionSchedulable = EI.hw_available && (dependency_valid < (step + 1.0) && (EI.valid < step + 1.0 || EI.latency >= 1.0));
 
       //Additional check for terminator
       if (I->isTerminator())
@@ -147,8 +148,10 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       if  ( instructionSchedulable ) {
 
-        LOG_S(IS_DBG + 1) << "Instruction: " << *I << " has been scheduled \n";
+        LOG_S(INFO) << "Instruction: " << *I << " has been scheduled \n";
         LOG_S(IS_DBG + 2) << "Valid time " << EI.valid << "\n";
+
+        HWD.updateHWResources(I);
 
         if (I->getOpcode()==llvm::Instruction::Ret)
           state.termInstruction = I;
@@ -162,6 +165,8 @@ void InstructionScheduler::schedule(Function * irFunction)
           if (BasicBlock::classof(val) && !isBasicBlockSchedulable(static_cast<BasicBlock*>(val))) continue;
           auto ret = CDI_h->addValueInfo(val);
           ret.first->second.setBirthTime(step, EI.valid);
+          LOG_S(INFO) << "Set birth time of " << *val << "\n";
+          LOG_S(INFO) << " >>> " << step << " " << EI.valid << "\n";
         }
 
         //When a value is fed back in a loop, we artificially add use time = valid time
@@ -194,6 +199,7 @@ void InstructionScheduler::schedule(Function * irFunction)
 
     //After considering all instructions in the queue, we advance the time step
     step ++ ;
+    HWD.nextStep();
 
     //For debugging, if we keep iterating for 20 steps and we still can't finish
     if (step >= MAX_STEP) dumpInstructions(instructions);

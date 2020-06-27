@@ -5,17 +5,72 @@
 
 #include "HardwareDescription.hpp"
 #include "DataAnalyzer.hpp"
+#include "HdlObject.hpp"
 
 using namespace hdbe;
 
+#define PACK(max, cnt) ((max & 0xffff) << 16 | cnt )
+#define UNPACK_MAX(a)  ((a >> 16) & 0xffff)
+#define UNPACK_CNT(a)  (a & 0xffff)
+bool HardwareDescription::initializeHWResources()
+{
+  for(auto memObj : CDI_h->memObjList)
+  {
+    if (memObj.property.vtype == HdlVectorType::memoryType)
+    {
+      Value *basePtr = memObj.getIrValue();
+      unsigned uniqueID = static_cast<unsigned>(reinterpret_cast<uintptr_t>(basePtr));
+      this->RM[hashInstructionToResourceID(llvm::Instruction::Load  , uniqueID)] = PACK(1, 1);
+      this->RM[hashInstructionToResourceID(llvm::Instruction::Store , uniqueID)] = PACK(1, 1);
+      LOG_S(INFO) << "Initializing memory ports for " << basePtr->getName() << "\n";
+    }
+  }
+  return true;
+}
+
+void HardwareDescription::nextStep()
+{
+  for(auto & item: RM)
+  {
+    unsigned cnt = UNPACK_CNT(item.second);
+    unsigned max = UNPACK_MAX(item.second);
+    if (cnt < max) cnt++;
+    item.second = PACK(max, cnt);
+    LOG_S(INFO) << "Next step " << item.second << "\n";
+  }
+}
+
+void HardwareDescription::updateHWResources(llvm::Instruction* instruction)
+{
+  int memOpIdx;
+  Value* basePtr;
+  unsigned res_id;
+  if (isMemoryInstruction(instruction)) {
+    basePtr = DataAnalyzer::analyzeMemoryOp(instruction, &memOpIdx);
+    unsigned uniqueID = static_cast<unsigned>(reinterpret_cast<uintptr_t>(basePtr));
+    res_id  = hashInstructionToResourceID(instruction->getOpcode(), uniqueID); 
+    if (RM.count(res_id) > 0) {
+      RM[res_id]--;
+      LOG_S(INFO) << "Updated hw resources of " << basePtr->getName() << " " << RM[res_id] << "\n";
+    }
+  }
+}
 
 HardwareDescription::ExecutionInfo HardwareDescription::requestToSchedule(llvm::Instruction* instruction, float latest_dependency)
 {
   int memOpIdx;
   Value* basePtr;
   ExecutionInfo exeInfo;
+  unsigned res_id;
   if (isMemoryInstruction(instruction)) {
     basePtr = DataAnalyzer::analyzeMemoryOp(instruction, &memOpIdx);
+    res_id  = hashInstructionToResourceID(instruction->getOpcode(), (unsigned)reinterpret_cast<uintptr_t>(basePtr)); 
+    if (instruction->getOpcode() == llvm::Instruction::Load || instruction->getOpcode() == llvm::Instruction::Store)
+    {
+      exeInfo.hw_available = UNPACK_CNT(RM[res_id]) > 0;
+      LOG_S(INFO) << "Request to schedule " << *instruction << "\n";
+      LOG_S(INFO) << "Resource is " << exeInfo.hw_available << " " << RM[res_id] << "\n";
+    }
   }
   switch(instruction->getOpcode()) 
   {

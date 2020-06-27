@@ -76,6 +76,7 @@ class ControlDataInfo {
           loopCount = LI.getLoopsInPreorder().size();
           LOG_S(INFO) << "Loop Info extracted " << loopCount << " loop found\n";
         }
+        HWD.setParent(this);
       }
     ~ControlDataInfo () {}
 

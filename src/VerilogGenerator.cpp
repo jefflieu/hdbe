@@ -73,9 +73,8 @@ String VerilogGenerator::writeHdlObjDeclaration(HdlObject& obj, String tag = "")
     decl = (obj.property.stype == HdlSignalType::inputType)? VERILOG_INPUT :(
               (obj.property.stype == HdlSignalType::outputType)? VERILOG_OUTPUT :""
             );
-    end_decl = (obj.property.stype == HdlSignalType::inputType)?",\n":(
-              (obj.property.stype == HdlSignalType::outputType)?",\n":";\n"
-            );
+
+    end_decl = (obj.property.stype == HdlSignalType::regType)?";\n":",\n";
 
     String dflt;
     switch (obj.property.vtype)

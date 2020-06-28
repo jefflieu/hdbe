@@ -57,6 +57,8 @@ int main(int argc, char** argv, char** env) {
     const int kCLK_PER_CALL  = 1e9;
     const int kMEM_SIZE      = SIZE;
     const int kSTART_TIME    = 10;
+    const int kCOMPLETE_TIME = kSTART_TIME + (SIZE+1)*2 + 2;
+
     int calls = 0, returns = 0, done = 0;
     int Reference[kCALLS];
     int Returns[kCALLS];
@@ -132,7 +134,9 @@ int main(int argc, char** argv, char** env) {
         simErrors++;
       }
     }
+    simErrors += (main_time > kCOMPLETE_TIME);
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
+    VL_PRINTF("Time : %06ld - %5s\n", main_time, main_time > kCOMPLETE_TIME?"Failed":"Passed");
 
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE

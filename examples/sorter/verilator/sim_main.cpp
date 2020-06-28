@@ -8,9 +8,9 @@
 #include <verilated.h>
 
 // Include model header, generated from Verilating "top.v"
-#include "Vbinary_search.h"
+#include "Vsorter.h"
 
-#include "binary_search.h"
+#include "sorter.h"
 
 // Current simulation time (64-bit unsigned)
 vluint64_t main_time = 0;
@@ -20,7 +20,6 @@ double sc_time_stamp() {
 }
 
 
-#define SWAP(arr, i, j) do {auto t = arr[i]; arr[i] = arr[j]; arr[j] = t;} while(0);
 
 int main(int argc, char** argv, char** env) {
     // This is a more complicated example, please also see the simpler examples/make_hello_c.
@@ -47,42 +46,36 @@ int main(int argc, char** argv, char** env) {
     Verilated::mkdir("logs");
 
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
-    Vbinary_search* top = new Vbinary_search();  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
+    Vsorter* top = new Vsorter();  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
 
     // Set some inputs
     
     top->func_clk = 0;
     top->func_start = 0;
 
-    const int kCALLS         = 200;
+    const int kCALLS         = 1;
     const int kCLK_PER_CALL  = 1e9;
-    const int kMEM_SIZE      = 4096;
+    const int kMEM_SIZE      = 128;
     const int kSTART_TIME    = 10;
-    const int kCOMPLETE_TIME = (log(kMEM_SIZE)/log(2)+1)*kCALLS*2;//2counts/clock
-
-    int calls = 0, returns = 0;
-    u16 match_idx_ref[kCALLS];
-    u16 match_result_ref[kCALLS];
-    u16 match_idx[kCALLS];
-    u16 match_result[kCALLS];
+    const int kTIME_OUT      = kMEM_SIZE*kMEM_SIZE*10*2;
+    const int kCOMPLETE_TIME = 33300;
+    int calls = 0, returns = 0, done = 0;
+    int Reference[kCALLS];
+    int Returns[kCALLS];
     int simErrors = -1;
-    u16 sorted_data[kMEM_SIZE];
-    u16 mem_raddr;
-    int done = 0;
-    for(int i = 0; i < kMEM_SIZE; i++)
-    {
-      sorted_data[i] = rand();
-    }
+    s32 data_reference[kMEM_SIZE];
+    s32 data[kMEM_SIZE];
+    u16 data_raddr;
+    u16 data_waddr;
 
     for(int i = 0; i < kMEM_SIZE; i++)
     {
-      for(int j = i; j < kMEM_SIZE; j++)
-        if (sorted_data[i] > sorted_data[j]) SWAP(sorted_data, i, j);
+      data_reference[i] = rand();
+      data[i] = data_reference[i];
     }
-
     //VL_PRINTF("Expected value %d\n", ref);
 
-    while (true) {
+    while (main_time < kTIME_OUT) {
         main_time++;  // Time passes...
 
         // Toggle a fast (time/2 period) clock
@@ -90,31 +83,30 @@ int main(int argc, char** argv, char** env) {
 
         // Toggle control signals on an edge that doesn't correspond
         // to where the controls are sampled
-        if (!top->func_clk && main_time >= kSTART_TIME) {
+        if (!top->func_clk) { 
+          if (main_time >= kSTART_TIME) {
             top->func_start = (calls < kCALLS && ((main_time == kSTART_TIME) || done));
             if (top->func_start)
             {
-              u16 idx = rand() % (kMEM_SIZE + 1);
-              top->data = (idx < kMEM_SIZE)?sorted_data[idx]:rand();
               top->size = kMEM_SIZE;
-              match_result_ref[calls] = binary_search(sorted_data, top->data, kMEM_SIZE, &match_idx_ref[calls]);
+              sorter(data_reference, (u13) top->size);
               calls++;
-            }
-            done = top->func_done; 
+              VL_PRINTF("Function called \n");
+            } 
+          }
         }
 
         //Sampling
         if (top->func_clk)
         {
-          mem_raddr  = top->mem_raddr; 
-          if (top->match_idx_valid) {
-            match_idx[returns] = top->match_idx[0];
-          }
-          
+          data_raddr  = top->data_raddr; 
+          data_waddr  = top->data_waddr;
           if (top->func_done) {
-            match_result[returns] = top->func_ret;
+            Returns[returns] = top->func_ret;
             returns++;
           }
+          if (top->data_wren) data[data_waddr % kMEM_SIZE] = top->data_wdata; 
+          done = top->func_done;
           if (returns == kCALLS) break;
         }
        
@@ -128,22 +120,24 @@ int main(int argc, char** argv, char** env) {
         //Drive
         if(top->func_clk)
         {
-          top->mem_rdata = sorted_data[mem_raddr % kMEM_SIZE];
+          top->data_rdata = data[data_raddr % kMEM_SIZE];
         }
-    
+
+        // Read outputs
+        //VL_PRINTF("[%" VL_PRI64 "d] clk=%x din=%d func_start=%x func_done = %x func_ret = %d \n",
+        //          main_time, top->func_clk, top->din[0], top->func_start, top->func_done, top->func_ret);
     }
     // Final model cleanup
     top->final();
 
     //Check
     simErrors = 0;
-    for(uint32_t chk = 0; chk < kCALLS; chk++)
+    for(uint32_t chk = 0; chk < kMEM_SIZE; chk++)
     {
-  
-      if (match_result[chk]!= match_result_ref[chk] || (match_result[chk] && match_idx[chk] != match_idx_ref[chk])) 
-        {
-          simErrors++;
-        }
+      if (data_reference[chk] != data[chk]) { 
+        simErrors++;
+        VL_PRINTF("Error at %d, %08x vs %08x\n", chk, data_reference[chk], data[chk]);
+      }
     }
     simErrors += (main_time > kCOMPLETE_TIME);
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);

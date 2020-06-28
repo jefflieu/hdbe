@@ -95,7 +95,8 @@ void InstructionScheduler::schedule(Function * irFunction)
   }
 
   HWD.initializeHWResources();
-    //Scheduling
+  
+  //Scheduling
   LOG(IS_DBG, "Start scheduling");
 
   uint32_t step = 0;
@@ -301,9 +302,10 @@ float InstructionScheduler::getDependencyValidTime(Instruction* instr)
 
 bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float current_step)
 {
-  auto &VIM            = CDI_h->valueInfoMap;
+  auto &VIM               = CDI_h->valueInfoMap;
   float  dependency_valid = current_step;
-
+  BasicBlock* parentBlock = brInst->getParent();
+  LoopInfo & LI           = CDI_h->LI;
   //Additional condition for branch instruction
   assert(brInst->isTerminator());
 
@@ -322,44 +324,90 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
       dependency_valid = std::max<float>(dependency_valid, VIM[&I].valid.time);
     }
   } else {
-    /* This whole block of code is concerned of a branch instruction that loops back 
-    to the loop header. So it traces the back value associated with the backedge 
-    and decide when the backedge can be done */ 
-    LoopInfo &LI = CDI_h->LI;
-    BasicBlock* parentBlock     = brInst->getParent();
-    llvm::Loop *loop = LI.getLoopFor(parentBlock);
-    bool isLoopLatch = false;
-    if (loop != nullptr) isLoopLatch = loop->isLoopLatch(parentBlock);
-    if (isLoopLatch) {
-      BasicBlock* header  = loop->getHeader();
-      //Iterate Phis of header 
-      for(Instruction &I : header->getInstList())
-      {
-        llvm::PHINode * phiInst;
-        if (phiInst = llvm::dyn_cast<llvm::PHINode>(&I)) {
-          for(unsigned i = 0; i < phiInst->getNumIncomingValues(); i++)
-          {        
-            //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
-            //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
-            if (phiInst->getIncomingBlock(i) == parentBlock)
-            {
-              Value* val = phiInst->getIncomingValue(i);
-              if (VIM.count(val) == 0) {
-                dependency_valid = 1.0e6;
-                LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n";
-                break;
-              } else {
-                auto valid = ceil(VIM[val].valid.time) - 1.0;
-                dependency_valid = std::max<float>(dependency_valid, valid);
-                LOG_S(INFO) << "Back value " << val->getName() << "\n";
-                LOG_S(INFO) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
+     //This loop to ensure that all instruction in the same BB have been schduled
+     for (Instruction &I : parentBlock->getInstList())
+     {
+       if ((&I) == brInst) continue;
+       if (VIM.count(&I) == 0) {
+         dependency_valid = 1.0e6;
+         LOG_S(IS_DBG + 2) << getBriefInfo(&I) << "Not found \n";
+         break;
+       }
+       dependency_valid = std::max<float>(dependency_valid, VIM[&I].schedule.time);
+     }
+
+     //This loop iterates the successor of the branch instruction 
+     //In each successor, it looks at the PHI instruction and looks for the Value associated with parentBlock
+     //If the transition is a backedge: this Value has to be valid after the transition (1 cycle)
+     //If the transition is not a backedge, this value has to be valid. 
+     //The condition is to ensure that all PHI instructions are executed at the first cycle that the SuccessorBlock is active
+     for(unsigned s = 0; s < brInst->getNumSuccessors(); s++)
+     {
+        BasicBlock * succ = brInst->getSuccessor(s);
+        for(Instruction &I : succ->getInstList())
+        {
+          llvm::PHINode * phiInst;
+          if (phiInst = llvm::dyn_cast<llvm::PHINode>(&I)) {
+            for(unsigned i = 0; i < phiInst->getNumIncomingValues(); i++)
+            {        
+              if (phiInst->getIncomingBlock(i) == parentBlock)
+              {
+                Value* val = phiInst->getIncomingValue(i);
+                if (VIM.count(val) == 0) {
+                  dependency_valid = 1.0e6;
+                  LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n";
+                  break;
+                } else {
+                  bool isBackEdge = (LI.isLoopHeader(succ) && (LI.getLoopFor(parentBlock) == LI.getLoopFor(succ)));
+                  auto valid = isBackEdge?(ceil(VIM[val].valid.time) - 1.0):VIM[val].valid.time;
+                  dependency_valid = std::max<float>(dependency_valid, valid);
+                  LOG_S(INFO) << "Back value " << val->getName() << "\n";
+                  LOG_S(INFO) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
+                }
               }
             }
           }
         }
-      }
-    }
+     }
   }
+  // } else {
+  //   /* This whole block of code is concerned of a branch instruction that loops back 
+  //   to the loop header. So it traces the back value associated with the backedge 
+  //   and decide when the backedge can be done */ 
+  //   LoopInfo &LI = CDI_h->LI;
+  //   llvm::Loop *loop = LI.getLoopFor(parentBlock);
+  //   bool isLoopLatch = false;
+  //   if (loop != nullptr) isLoopLatch = loop->isLoopLatch(parentBlock);
+  //   if (isLoopLatch) {
+  //     BasicBlock* header  = loop->getHeader();
+  //     //Iterate Phis of header 
+  //     for(Instruction &I : header->getInstList())
+  //     {
+  //       llvm::PHINode * phiInst;
+  //       if (phiInst = llvm::dyn_cast<llvm::PHINode>(&I)) {
+  //         for(unsigned i = 0; i < phiInst->getNumIncomingValues(); i++)
+  //         {        
+  //           //For other branch instruction, we only care about the Loopback value (a value is read on next loop iteration)
+  //           //The branch instruction can only be scheduled if the all back-values in the basicblock is valid
+  //           if (phiInst->getIncomingBlock(i) == parentBlock)
+  //           {
+  //             Value* val = phiInst->getIncomingValue(i);
+  //             if (VIM.count(val) == 0) {
+  //               dependency_valid = 1.0e6;
+  //               LOG_S(IS_DBG + 2) << getBriefInfo(val) << "Not found \n";
+  //               break;
+  //             } else {
+  //               auto valid = ceil(VIM[val].valid.time) - 1.0;
+  //               dependency_valid = std::max<float>(dependency_valid, valid);
+  //               LOG_S(INFO) << "Back value " << val->getName() << "\n";
+  //               LOG_S(INFO) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
   return (dependency_valid < (current_step + 1.0));
 }
 

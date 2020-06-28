@@ -3,7 +3,8 @@
 EXAMPLES  :=counter fir shiftreg input_array \
              rgb2yuv rgb2yuv_14\
               ctrlflow packetparse \
-                loop memport vector_add stack binary_search
+                loop memport vector_add stack binary_search \
+                  sorter
 VCD_FILE  :=sim/logs/vlt_dump.vcd
 CLEAN_ALL := $(foreach ex, $(EXAMPLES), clean-$(ex))
 TEST_ALL  := $(foreach ex, $(EXAMPLES), test-$(ex))

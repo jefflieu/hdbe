@@ -23,40 +23,51 @@ module icmpOp #(
     ICMP_SLT   = 40,  ///< signed less than
     ICMP_SLE   = 41,  ///< signed less or equal
   */
+  bit ret_comb;
+  bit ret_reg;
+
 generate
   if (ParamOpCode == "eq") begin 
-    assign ret = (lhs == rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs == rhs)?1'b1:1'b0;
   end
   else if (ParamOpCode == "ne") begin 
-    assign ret = (lhs != rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs != rhs)?1'b1:1'b0;
   end 
   else if (ParamOpCode == "ugt") begin 
-    assign ret = (lhs > rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs > rhs)?1'b1:1'b0;
   end
   else if (ParamOpCode == "uge") begin 
-    assign ret = (lhs >= rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs >= rhs)?1'b1:1'b0;
   end
   else if (ParamOpCode == "ult") begin 
-    assign ret = (lhs < rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs < rhs)?1'b1:1'b0;
   end
   else if (ParamOpCode == "ule") begin 
-    assign ret = (lhs > rhs)?1'b1:1'b0;
+    assign ret_comb = (lhs > rhs)?1'b1:1'b0;
   end
   else if (ParamOpCode == "sgt") begin 
-    assign ret = ($signed(lhs) > $signed(rhs))?1'b1:1'b0;
+    assign ret_comb = ($signed(lhs) > $signed(rhs))?1'b1:1'b0;
   end
   else if (ParamOpCode == "sge") begin 
-    assign ret = ($signed(lhs) >= $signed(rhs))?1'b1:1'b0;
+    assign ret_comb = ($signed(lhs) >= $signed(rhs))?1'b1:1'b0;
   end
   else if (ParamOpCode == "sle") begin 
-    assign ret = ($signed(lhs) < $signed(rhs))?1'b1:1'b0;
+    assign ret_comb = ($signed(lhs) < $signed(rhs))?1'b1:1'b0;
   end
   else if (ParamOpCode == "sle") begin 
-    assign ret = ($signed(lhs) <= $signed(rhs))?1'b1:1'b0;
+    assign ret_comb = ($signed(lhs) <= $signed(rhs))?1'b1:1'b0;
   end
   else begin 
 
 
   end 
   endgenerate
+
+  // always_ff @(posedge clk) 
+  // begin
+  //   if (enable) ret_reg <= ret_comb;    
+  // end
+
+  // assign ret = enable?ret_comb:ret_reg; 
+  assign ret = ret_comb;
 endmodule 

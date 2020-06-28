@@ -25,10 +25,13 @@ module PHINodeOp #(
   input  bit [ParamBitWidth     : 0] input14,
   input  bit [ParamBitWidth     : 0] input15
 );
-  
+
+  bit [ParamBitWidth - 1 : 0] ret_comb;
+  bit [ParamBitWidth - 1 : 0] ret_reg;
+
  DataMux #(ParamNumIncomingValues, ParamBitWidth, ParamBitWidth) 
  largemux ( clk, 
-            ret, 
+            ret_comb, 
             input0,
             input1,
             input2,
@@ -46,6 +49,11 @@ module PHINodeOp #(
             input14,
             input15);
 
+  always_ff @(posedge clk) 
+  begin 
+    if (enable) ret_reg <= ret_comb;    
+  end
 
+  assign ret = enable?ret_comb:ret_reg; 
 
 endmodule 

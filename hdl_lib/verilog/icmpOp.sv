@@ -51,7 +51,7 @@ generate
   else if (ParamOpCode == "sge") begin 
     assign ret_comb = ($signed(lhs) >= $signed(rhs))?1'b1:1'b0;
   end
-  else if (ParamOpCode == "sle") begin 
+  else if (ParamOpCode == "slt") begin 
     assign ret_comb = ($signed(lhs) < $signed(rhs))?1'b1:1'b0;
   end
   else if (ParamOpCode == "sle") begin 
@@ -69,5 +69,6 @@ generate
   // end
 
   // assign ret = enable?ret_comb:ret_reg; 
+
   assign ret = ret_comb;
 endmodule 

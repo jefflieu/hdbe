@@ -7,6 +7,7 @@
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
+#include "llvm/IR/Constant.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/ADT/Hashing.h"
@@ -26,6 +27,7 @@ class IRPreprocessor {
   using Instruction = llvm::Instruction;
   using StringRef = llvm::StringRef;
   using User = llvm::User;
+  using ConstantExpr = llvm::ConstantExpr;
   using String = std::string;
   using InstPointerVector = llvm::SmallVector<Instruction*, 16>;
 
@@ -43,12 +45,13 @@ class IRPreprocessor {
       }
     ~IRPreprocessor () {}
 
-    void run() { removePointerPHI(); transformNames();}// balanceCFG();}
+    void run() { removePointerPHI(); processConstantExpr(); transformNames();}// balanceCFG();}
     void transformNames();
     void balanceCFG();
     void removePointerPHI();
     void getRelatedValues(Instruction* I, BasicBlock* bb, InstPointerVector & ipv);
-
+    bool processConstantExpr(Instruction* I);
+    void processConstantExpr();
 };
 
 }

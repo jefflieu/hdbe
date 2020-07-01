@@ -730,7 +730,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   unsigned ptrSize   = CDI_h->getPointerSizeInBits();
   String GEP;
   String load_assign;
-  String store_assign;
+  String load_op_instantiate;
   String raddr_mux_map = "func_clk, " + MEMOBJ_RADDR(memObj);
   String waddr_mux_map = "func_clk, " + MEMOBJ_WADDR(memObj);
   String wdat_mux_map  = "func_clk, " + MEMOBJ_WDATA(memObj);
@@ -752,11 +752,35 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
     switch((*instr_i)->getOpcode())
     {
       case llvm::Instruction::Load:
-          load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + valid_tag + VERILOG_CONT_ASSIGN + MEMOBJ_RDATA(memObj) + VERILOG_ENDL;
+          {
+          //load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + valid_tag + VERILOG_CONT_ASSIGN + MEMOBJ_RDATA(memObj) + VERILOG_ENDL;
+          size = sprintf(buf,"%10s #(", "loadOp");
+          load_op_instantiate += String(buf, size);     
+          size = sprintf(buf,"%6d,", (*instr_i)->getType()->getIntegerBitWidth());
+          load_op_instantiate += String(buf, size); 
+          size = sprintf(buf,"%6d)", 1);
+          load_op_instantiate += String(buf, size); 
+          size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(*instr_i));
+          load_op_instantiate += String(buf, size); 
+          size = sprintf(buf,"func_clk, ");
+          load_op_instantiate += String(buf, size);   
+          
+          String activeCycle = getValueHdlName((*instr_i)->getParent()) + tag0;
+          size = sprintf(buf,"%s, ", activeCycle.data());
+          load_op_instantiate += String(buf, size);
+          
+          String mem_rdata_port = MEMOBJ_RDATA(memObj);
+          size = sprintf(buf,"%s, ", mem_rdata_port.data());
+          load_op_instantiate += String(buf, size); 
+
+          size = sprintf(buf,"%s%s );\n", (*instr_i)->getName().data(), &valid_tag[0]);  
+          load_op_instantiate += String(buf, size);   
+
           raddr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
           rden_assign  += String((ld_cnt > 0)?"|":"") + getValueHdlName((*instr_i)->getParent()) + tag0;
           ld_cnt++;
           break;
+          }
       case llvm::Instruction::Store:
           waddr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
           wdat_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
@@ -779,7 +803,7 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
 
   String instantiate;
   instantiate += GEP;
-  instantiate += load_assign;
+  instantiate += load_op_instantiate;
   if (ld_cnt > 0) {
     size = sprintf(buf,"%10s #(", "DataMux");
     instantiate += String(buf, size);     

@@ -19,7 +19,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 9
+#define  DA_DBG 0
 #endif 
 
 using namespace hdbe;
@@ -152,9 +152,16 @@ HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
                                           auto I = static_cast<llvm::GetElementPtrInst*>(value);
                                           property.stype = HdlSignalType::regType;
                                           property.bitwidth   = DL.getPointerSizeInBits();      
-                                          property.isConstant = ConstantInt::classof(I->getOperand(1));
-                                          if (property.isConstant)
-                                            property.dflt = (static_cast<llvm::ConstantInt*>(I->getOperand(1)))->getSExtValue();
+                                          property.isConstant = false;
+                                          
+                                          // not necessary and not cover all cases, removed
+                                          // for(unsigned i = 1; i < I->getNumOperands(); i++)
+                                          // {
+                                          //   property.isConstant = property.isConstant && ConstantInt::classof(I->getOperand(1));
+                                          // }
+                                          // if (property.isConstant)
+                                          //   property.dflt = (static_cast<llvm::ConstantInt*>(I->getOperand(1)))->getSExtValue();
+
                                         } else {
                                           property = analyzePointer(value);
                                         }
@@ -322,6 +329,12 @@ Value* DataAnalyzer::analyzeMemoryOp(Instruction * memOp, int* index)
       }
   if (Instruction::classof(basePtr)) 
     basePtr = analyzeMemoryOp(static_cast<Instruction*>(basePtr), index);
+  else if (llvm::ConstantExpr::classof(basePtr)) 
+    { 
+      Instruction *dummyInstr = static_cast<llvm::ConstantExpr*>(basePtr)->getAsInstruction();
+      basePtr = analyzeMemoryOp(dummyInstr, index);
+      static_cast<Value*>(dummyInstr)->deleteValue();
+    }
    LOG_S(DA_DBG + 1) << "done\n";
   return basePtr;
 }

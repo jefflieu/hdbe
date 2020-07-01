@@ -25,12 +25,14 @@ using namespace hdbe;
 
 void IRPreprocessor::transformNames()
 {
+  
   for (Module::global_iterator I = irModule->global_begin(), E = irModule->global_end(); I != E; ++I)
   {
     String newName = makeHdlName(I->getName().str());
     I->setName(newName);
     LOG_S(IR_PP_DBG) << I->getName() << "\n";
   }
+  
   for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
   {
     for(Function::iterator B = F->begin(), B_end = F->end(); B != B_end; ++B)
@@ -43,10 +45,42 @@ void IRPreprocessor::transformNames()
       if (I->getType()->isVoidTy()) continue;
       I->setName(makeHdlName(I->getName().str()));
       LOG_S(IR_PP_DBG) << I->getName() << "\n";
-        
+    }
+  }
+
+}
+
+void IRPreprocessor::processConstantExpr()
+{
+  for (Module::iterator F = irModule->begin(), F_end = irModule->end(); F != F_end; ++F)
+  {
+    for (llvm::inst_iterator I = inst_begin(&*F), E = inst_end(&*F); I != E; ++I)
+    {
+      processConstantExpr(&*I);
     }
   }
 }
+
+bool IRPreprocessor::processConstantExpr(Instruction* I)
+{
+  for(Value *value : I->operands())
+  {
+    ConstantExpr * ce = nullptr;
+    if (ce = llvm::dyn_cast<ConstantExpr>(value))
+    {
+      Instruction *ce_instr = ce->getAsInstruction();
+      if(ce_instr->getOpcode() == Instruction::GetElementPtr)
+      {
+        String name = "constExpr_" + getValueHdlName(static_cast<Value*>(ce_instr));
+        ce_instr->setName(makeHdlName(name));
+        ce_instr->insertBefore(I);
+        static_cast<User*>(I)->replaceUsesOfWith(value, static_cast<Value*>(ce_instr));
+      }
+      LOG_S(0) << "Found constant expression " << *ce;
+    }
+  }
+  return true;
+} 
 
 ///This function is deprecated. 
 ///This is used to insert an empty BasicBlock to the edge that jumps BasicBlock level

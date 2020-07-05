@@ -305,7 +305,7 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
   auto &VIM               = CDI_h->valueInfoMap;
   float  dependency_valid = current_step;
   BasicBlock* parentBlock = brInst->getParent();
-  LoopInfo & LI           = CDI_h->LI;
+  auto &LI                = CDI_h->getLoopInfo();
   //Additional condition for branch instruction
   assert(brInst->isTerminator());
 
@@ -433,10 +433,12 @@ void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
 {
   BasicBlock* parentBlock = brInst->getParent();
   auto &VIM               = CDI_h->valueInfoMap;
-  LoopInfo &LI            = CDI_h->LI;
+  auto &LI                = CDI_h->getLoopInfo();
+  auto loops              = LI.getLoopsInPreorder();
+  LOG_S(INFO) << "Loop cnt: " << loops.size() << "\n";
   llvm::Loop *loop        = LI.getLoopFor(parentBlock);
   bool isLoopLatch        = false;
-  if (loop != nullptr) isLoopLatch = loop->isLoopLatch(parentBlock);
+  isLoopLatch = (loop && loop->isLoopLatch(parentBlock)); 
   if (isLoopLatch) {
     BasicBlock* header  = loop->getHeader();
     //Iterate Phis of header 

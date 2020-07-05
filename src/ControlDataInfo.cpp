@@ -8,6 +8,7 @@
 
 using namespace hdbe;
 
+
 HdlState& ControlDataInfo::getInstructionState(Instruction* I)
 {
   for(HdlState& state : stateList)

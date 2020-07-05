@@ -7,13 +7,14 @@
 
 #include <typeinfo> 
 
-#include "llvm/IR/Dominators.h"
-#include "llvm/Analysis/LoopInfo.h"
+
+#include "llvm/Passes/PassBuilder.h"
 #include "llvm/ADT/Hashing.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Support/raw_ostream.h"
+
 
 #include "logging/logger.hpp"
 #include "HdlObject.hpp"
@@ -26,8 +27,10 @@ namespace hdbe {
 
 using CFGEdgeVector = llvm::SmallVector<HdlCFGEdge*, 16>;
 
+
 /// This class holds all the results performed by other blocks such as DataAnalyzer, InstructionScheduler ..
 /// The results are stored in various lists which serve the ultimate goal of creating HDL description of the IR
+
 class ControlDataInfo {
   
 
@@ -38,7 +41,9 @@ class ControlDataInfo {
   using BasicBlock  = llvm::BasicBlock;
   using Hashcode    = llvm::hash_code;
   using DataLayout  = llvm::DataLayout;
-
+  using LoopInfo    = llvm::LoopInfo;
+  using MemorySSA   = llvm::MemorySSA;
+  
   friend class DataAnalyzer;
   friend class VerilogGenerator;
   friend class InstructionScheduler;
@@ -58,26 +63,35 @@ class ControlDataInfo {
     std::map<Value*, ValueLifeInfo> valueInfoMap;
 
     HardwareDescription     HWD;
-    llvm::DominatorTree DT;
-    llvm::LoopInfo LI;
-    unsigned loopCount;
+
+
+    //Construct Pass builder 
+    llvm::PassBuilder PB;
+    llvm::FunctionPassManager FPM;
+    llvm::FunctionAnalysisManager FAM;
+    llvm::LoopPassManager LPM;
+    llvm::LoopAnalysisManager LAM;
 
   public :
-    ControlDataInfo () {HWD.setParent(this);};     
-    ControlDataInfo (Module *_module, const char* functionName) : irModule(_module) 
+    static char ID;
+    
+    explicit ControlDataInfo (Module *_module, const char* functionName) : irModule(_module) 
       { 
         this->irFunction = irModule->getFunction(functionName);
         if (!irFunction) 
           LOG(ERROR, "Function named " << functionName << " .. not found");
         else {
           LOG(INFO, "Module loaded");
-          DT = llvm::DominatorTree(*irFunction);
-          LI = llvm::LoopInfo(DT);
-          loopCount = LI.getLoopsInPreorder().size();
-          LOG_S(INFO) << "Loop Info extracted " << loopCount << " loop found\n";
+
+          FPM = llvm::FunctionPassManager(true);
+          FAM = llvm::FunctionAnalysisManager(true);
+          PB.registerFunctionAnalyses(FAM);
+          FPM.run(*irFunction, FAM);
+                    
         }
         HWD.setParent(this);
       }
+
     ~ControlDataInfo () {}
 
     inline auto addValueInfo (Value* val) {
@@ -89,9 +103,13 @@ class ControlDataInfo {
     CFGEdgeVector findAllCFGEdges(BasicBlock* src, BasicBlock* dst);
     void        addCFGEdge(HdlCFGEdge& edge);
     unsigned    getPointerSizeInBits() {const DataLayout & DL = this->irModule->getDataLayout(); return DL.getPointerSizeInBits();} 
+    llvm::LoopInfo & getLoopInfo()  {return FAM.getResult<llvm::LoopAnalysis>(*irFunction);}
+    llvm::MemorySSA& getMemorySSA() {return FAM.getResult<llvm::MemorySSAAnalysis>(*irFunction).getMSSA();}
 
     void dumpStateList();
     void dumpValueInfoMap();
+
+    
 };
 
 

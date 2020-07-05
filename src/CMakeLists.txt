@@ -20,7 +20,8 @@ include_directories(${LLVM_INCLUDE_DIRS} ${hdlbe_src})
 add_definitions(${LLVM_DEFINITIONS})
 
 SET(GCC_DBG_FLAGS "-g -rdynamic")
-SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_DBG_FLAGS}")
+SET(CXX_FLAGS "-fno-rtti")
+SET(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${GCC_DBG_FLAGS} ${CXX_FLAGS}")
 
 # Now build our tools
 add_executable(hdbe hdbe.cpp )

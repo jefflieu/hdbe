@@ -19,7 +19,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 0
+#define  DA_DBG 9
 #endif 
 
 using namespace hdbe;

@@ -1,6 +1,6 @@
 /* Authors: 
-Eli Bendersky (eliben@gmail.com)
 Jeff Lieu (lieumychuong@gmail.com)
+based off : Eli Bendersky (eliben@gmail.com)
 */
 #include <typeinfo> 
 
@@ -43,11 +43,13 @@ int main(int argc, char **argv) {
     Err.print(argv[0], errs());
     return 1;
   }
-  
+
+
   //////////////////////////////////////////////////////
   ///   Control Data Info is the main object that holds 
   /// lots of  information relevant to the HDL generation processes
   ControlDataInfo CDI(Mod.get(), funcName);
+
 
   /// Preprocessing the IR data structure
   IRPreprocessor IRPrep(Mod.get(), funcName);

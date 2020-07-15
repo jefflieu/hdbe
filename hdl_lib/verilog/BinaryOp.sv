@@ -55,5 +55,6 @@ module BinaryOp #(
   // end
 
   // assign ret = enable?ret_comb:ret_reg; 
+  
   assign ret = ret_comb;
 endmodule 

@@ -31,6 +31,7 @@ class InstructionScheduler {
   private: 
     ControlDataInfo *CDI_h;
     bool isBackValue(Value* v);
+    bool isMemoryInstSchedulable(Instruction * brInst, float current_step);
     bool isBranchSchedulable(Instruction * brInst, float current_step);
     bool isBasicBlockSchedulable(BasicBlock * bb);
     float getDependencyValidTime(Instruction* instr);

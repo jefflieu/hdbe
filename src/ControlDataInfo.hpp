@@ -7,6 +7,8 @@
 
 #include <typeinfo> 
 
+#include "llvm/Analysis/DependenceAnalysis.h"
+#include "llvm/Analysis/MemoryDependenceAnalysis.h"
 
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/ADT/Hashing.h"
@@ -21,6 +23,7 @@
 #include "HdlState.hpp"
 #include "ValueLifeInfo.hpp"
 #include "HardwareDescription.hpp"
+#include "DependenceInfo.hpp"
 
 
 namespace hdbe {
@@ -61,7 +64,7 @@ class ControlDataInfo {
     std::list<HdlCFGEdge  > transitionList;    
     std::map<Hashcode, HdlCFGEdge*> edgeMap;    
     std::map<Value*, ValueLifeInfo> valueInfoMap;
-
+    std::map<Value*, DependenceInfo> dependencyMap;
     HardwareDescription     HWD;
 
 
@@ -98,17 +101,24 @@ class ControlDataInfo {
       return valueInfoMap.insert(std::pair<Value*, ValueLifeInfo>(val, ValueLifeInfo(val)));
     }
 
+    inline auto addDependenceInfo(Value* val) {
+      return dependencyMap.insert(std::pair<Value*, DependenceInfo>(val, DependenceInfo(val)));
+    }
+
     HdlState&   getInstructionState(Instruction* I);
     HdlCFGEdge& findCFGEdge(BasicBlock* src, BasicBlock* dst);
     CFGEdgeVector findAllCFGEdges(BasicBlock* src, BasicBlock* dst);
     void        addCFGEdge(HdlCFGEdge& edge);
     unsigned    getPointerSizeInBits() {const DataLayout & DL = this->irModule->getDataLayout(); return DL.getPointerSizeInBits();} 
+    
     llvm::LoopInfo & getLoopInfo()  {return FAM.getResult<llvm::LoopAnalysis>(*irFunction);}
     llvm::MemorySSA& getMemorySSA() {return FAM.getResult<llvm::MemorySSAAnalysis>(*irFunction).getMSSA();}
-
+    llvm::MemoryDependenceResults & getMemoryDependenceResults() {return FAM.getResult<llvm::MemoryDependenceAnalysis>(*irFunction);}
+    llvm::DominatorTree & getDominatorTree() {return FAM.getResult<llvm::DominatorTreeAnalysis>(*irFunction);}
+    llvm::DependenceInfo & getDependenceInfo() {return FAM.getResult<llvm::DependenceAnalysis>(*irFunction);}
     void dumpStateList();
     void dumpValueInfoMap();
-
+    void dumpDependencyMap();
     
 };
 

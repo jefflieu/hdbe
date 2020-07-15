@@ -19,7 +19,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 9
+#define  DA_DBG 0
 #endif 
 
 using namespace hdbe;
@@ -80,6 +80,7 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
         memObj.memInstrList.push_back(&*I);
       }
 
+
     }
     //
     ValuePtrVector depList = getInstructionInputs(&*I, false);
@@ -99,8 +100,13 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
   {
     LOG_S(DA_DBG + 1) << *(I->getIrValue()) << "\n";
   }*/
-  
+  //auto &memSSA    = CDI_h->getMemorySSA();
+  //LOG_S(INFO) << "Memory SSA \n";
+  //memSSA.dump();
+  analyzeMemoryDependency();
+
   LOG_DONE(INFO);
+
 }
 
 HdlProperty DataAnalyzer::analyzeValue(llvm::Value* value)
@@ -450,8 +456,7 @@ bool DataAnalyzer::isBackValue(Value* v)
 
 void DataAnalyzer::analyzeLoops(Module* irModule, Function* irFunction)
 {
-  llvm::DominatorTree DT(*irFunction);
-  llvm::LoopInfo LI(DT);
+  llvm::LoopInfo & LI = CDI_h->getLoopInfo();
   LOG_START(INFO);
   LI.print(_log_stdout);
   auto loops = LI.getLoopsInPreorder();
@@ -460,6 +465,52 @@ void DataAnalyzer::analyzeLoops(Module* irModule, Function* irFunction)
   LOG_DONE(INFO);
 
 }
+
+void DataAnalyzer::analyzeMemoryDependency()
+{
+  auto &memObjList = CDI_h->memObjList;
+  auto &DT         = CDI_h->getDominatorTree();
+  auto &DM         = CDI_h->dependencyMap;
+  auto &DI         = CDI_h->getDependenceInfo();
+  //First pass generate Dependence for each instruction 
+  for(auto &item : memObjList)
+  {
+    LOG_S(DA_DBG) << "Memory: " << item.getName() << " has : \n";
+    for(auto *inst : item.memInstrList)
+    {
+      CDI_h->addDependenceInfo(inst);
+    }
+  }
+
+  for(auto &item : memObjList)
+  {
+    LOG_S(DA_DBG) << "Memory: " << item.getName() << " has : \n";
+    for(auto *inst : item.memInstrList)
+    {
+      if (inst->getOpcode() == Instruction::Load || inst->getOpcode() == Instruction::Store)
+      {
+        LOG_S(DA_DBG+1) << *inst << " dominates \n";
+        for(auto *inst2 : item.memInstrList)
+        {
+          if ((inst2->getOpcode() == Instruction::Load || inst2->getOpcode() == Instruction::Store) && 
+            (DT.dominates(inst, inst2))) { 
+            LOG_S(DA_DBG+2) << *inst2 << "\n"; 
+            auto &dependenceInfo = DM[inst2];
+            DependenceType type = DependenceType::NoDependency;
+            if (inst->getOpcode() == Instruction::Store && inst2->getOpcode() == Instruction::Load)
+              type = DependenceType::Valid;
+            else if (inst->getOpcode() == Instruction::Load && inst2->getOpcode() == Instruction::Store)
+              type = DependenceType::Schedule;
+            dependenceInfo.addDependence(inst, type);
+          }
+        }
+      }
+    }
+  }  
+
+}
+
+
 
 
 

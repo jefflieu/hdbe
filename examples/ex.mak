@@ -1,7 +1,7 @@
 
 
 CLANG := clang 
-FLAGS := 
+FLAGS := -DHDBE
 CLANG_FLAGS := -O3 -fno-slp-vectorize -S -emit-llvm -c $(FLAGS)
 HDBE  := hdbe 
 SRCS := $(wildcard *.c)

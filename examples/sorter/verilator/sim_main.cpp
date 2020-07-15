@@ -55,7 +55,7 @@ int main(int argc, char** argv, char** env) {
 
     const int kCALLS         = 1;
     const int kCLK_PER_CALL  = 1e9;
-    const int kMEM_SIZE      = 128;
+    const int kMEM_SIZE      = 64;
     const int kSTART_TIME    = 10;
     const int kTIME_OUT      = kMEM_SIZE*kMEM_SIZE*10*2;
     const int kCOMPLETE_TIME = 33300;
@@ -65,12 +65,15 @@ int main(int argc, char** argv, char** env) {
     int simErrors = -1;
     s32 data_reference[kMEM_SIZE];
     s32 data[kMEM_SIZE];
+    s32 data_rdata;
     u16 data_raddr;
     u16 data_waddr;
+    s32 data_fixed[kMEM_SIZE] = {1, 2, 4, 9, 3, 4, 6, 10, 12, 15, 20, 4, 5, 9, 8, 7};
 
     for(int i = 0; i < kMEM_SIZE; i++)
     {
-      data_reference[i] = rand();
+      data_reference[i] = rand() % 100;
+      //data_reference[i] = data_fixed[i];
       data[i] = data_reference[i];
     }
     //VL_PRINTF("Expected value %d\n", ref);
@@ -100,6 +103,7 @@ int main(int argc, char** argv, char** env) {
         if (top->func_clk)
         {
           data_raddr  = top->data_raddr; 
+          data_rdata  = data[data_raddr % kMEM_SIZE];
           data_waddr  = top->data_waddr;
           if (top->func_done) {
             Returns[returns] = top->func_ret;
@@ -120,7 +124,8 @@ int main(int argc, char** argv, char** env) {
         //Drive
         if(top->func_clk)
         {
-          top->data_rdata = data[data_raddr % kMEM_SIZE];
+          //top->data_rdata = data[data_raddr % kMEM_SIZE];
+          top->data_rdata = data_rdata;
         }
 
         // Read outputs
@@ -142,7 +147,12 @@ int main(int argc, char** argv, char** env) {
     simErrors += (main_time > kCOMPLETE_TIME);
     VL_PRINTF("Test : %s with %d errors\n", (simErrors > 0)?"Failed":"Passed", simErrors);
     VL_PRINTF("Time : %06ld - %5s\n", main_time, main_time > kCOMPLETE_TIME?"Failed":"Passed");
-
+    for(uint32_t chk = 0; chk < kMEM_SIZE; chk++)
+    {
+      VL_PRINTF("%c%d", ((chk&0xf)==0)?'\n':' ',data[chk]);
+    }
+    VL_PRINTF("\n");
+    
     //  Coverage analysis (since test passed)
 #if VM_COVERAGE
     Verilated::mkdir("logs");

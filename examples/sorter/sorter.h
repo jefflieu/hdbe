@@ -22,6 +22,13 @@ typedef unsigned _ExtInt(13) u13;
 
 void sorter(s32 * data, u13 size);
 
+#if defined(ENABLE_DPRINT)
+#include <stdio.h>
+#define DPRINT printf 
+#else 
+#define DPRINT(a,...) do{} while (0)
+#endif 
+
 #ifdef __cplusplus 
 }
 #endif

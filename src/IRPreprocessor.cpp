@@ -76,7 +76,7 @@ bool IRPreprocessor::processConstantExpr(Instruction* I)
         ce_instr->insertBefore(I);
         static_cast<User*>(I)->replaceUsesOfWith(value, static_cast<Value*>(ce_instr));
       }
-      LOG_S(0) << "Found constant expression " << *ce;
+      LOG_S(0) << "Found constant expression " << *ce << "\n";
     }
   }
   return true;

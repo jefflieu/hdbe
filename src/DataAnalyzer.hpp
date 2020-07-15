@@ -68,6 +68,7 @@ class DataAnalyzer {
     static Value* analyzeMemoryOp(Instruction * memOp, int* index);
     void analyzeBasicBlocks(Module* irModule, Function* irFunction);
     void analyzeLoops(Module* irModule, Function* irFunction);
+    void analyzeMemoryDependency();
 
 };
 

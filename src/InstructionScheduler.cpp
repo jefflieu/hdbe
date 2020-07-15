@@ -146,6 +146,8 @@ void InstructionScheduler::schedule(Function * irFunction)
       //Additional check for terminator
       if (I->isTerminator())
         instructionSchedulable = instructionSchedulable && isBranchSchedulable(I, step);
+      else if (isMemoryInstruction(I))
+        instructionSchedulable = instructionSchedulable && isMemoryInstSchedulable(I, step);
 
       if  ( instructionSchedulable ) {
 
@@ -166,8 +168,8 @@ void InstructionScheduler::schedule(Function * irFunction)
           if (BasicBlock::classof(val) && !isBasicBlockSchedulable(static_cast<BasicBlock*>(val))) continue;
           auto ret = CDI_h->addValueInfo(val);
           ret.first->second.setBirthTime(step, EI.valid);
-          LOG_S(INFO) << "Set birth time of " << *val << "\n";
-          LOG_S(INFO) << " >>> " << step << " " << EI.valid << "\n";
+          LOG_S(IS_DBG) << "Set birth time of " << *val << "\n";
+          LOG_S(IS_DBG) << " >>> " << step << " " << EI.valid << "\n";
         }
 
         //When a value is fed back in a loop, we artificially add use time = valid time
@@ -476,6 +478,32 @@ void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
   // }
 }
 
+bool InstructionScheduler::isMemoryInstSchedulable(Instruction * memInstr, float current_step)
+{
+  auto &VIM               = CDI_h->valueInfoMap;
+  auto &DM                = CDI_h->dependencyMap;
+  float  dependency_valid = current_step;
+  //Additional condition for branch instruction
+  assert("Instruction is not memory instruction" && isMemoryInstruction(memInstr));
 
+  auto & depInfo = DM[static_cast<Value*>(memInstr)];
+
+  for(auto &item : depInfo.getDependenceMap())
+  {
+    if (item.second == DependenceType::NoDependency) continue;
+    if (VIM.count(item.first) == 0) {
+      dependency_valid = 1.0e6;
+      LOG_S(IS_DBG + 2) << getBriefInfo(item.first) << "Not found \n";
+      break;
+    }
+    if (item.second == DependenceType::Valid)
+      dependency_valid = std::max<float>(dependency_valid, VIM[item.first].valid.time);
+    else 
+      dependency_valid = std::max<float>(dependency_valid, VIM[item.first].schedule.time);
+
+  }
+
+  return (dependency_valid < (current_step + 1.0));
+}
 
 

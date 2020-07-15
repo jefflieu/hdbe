@@ -84,3 +84,14 @@ void ControlDataInfo::dumpValueInfoMap()
   }
   LOG_S(0) <<"---------------------------------" << "\n";
 }
+
+void ControlDataInfo::dumpDependencyMap()
+{
+  LOG_S(0) <<"---------------------------------" << "\n";
+  LOG_S(0) <<"Dependency" << "\n";
+  for(auto item : this->dependencyMap)
+  {
+    LOG_S(0) << item.second.repr();
+  }
+  LOG_S(0) <<"---------------------------------" << "\n";
+}

@@ -65,6 +65,7 @@ int main(int argc, char **argv) {
 
   CDI.dumpValueInfoMap();
   CDI.dumpStateList();
+  CDI.dumpDependencyMap();
 
   /// Then output SystemVerilog entity
   VerilogGenerator VGen(&CDI);

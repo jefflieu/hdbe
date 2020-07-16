@@ -151,7 +151,7 @@ void InstructionScheduler::schedule(Function * irFunction)
 
       if  ( instructionSchedulable ) {
 
-        LOG_S(INFO) << "Instruction: " << *I << " has been scheduled \n";
+        LOG_S(IS_DBG + 2) << "Instruction: " << *I << " has been scheduled \n";
         LOG_S(IS_DBG + 2) << "Valid time " << EI.valid << "\n";
 
         HWD.updateHWResources(I);
@@ -168,8 +168,8 @@ void InstructionScheduler::schedule(Function * irFunction)
           if (BasicBlock::classof(val) && !isBasicBlockSchedulable(static_cast<BasicBlock*>(val))) continue;
           auto ret = CDI_h->addValueInfo(val);
           ret.first->second.setBirthTime(step, EI.valid);
-          LOG_S(IS_DBG) << "Set birth time of " << *val << "\n";
-          LOG_S(IS_DBG) << " >>> " << step << " " << EI.valid << "\n";
+          LOG_S(IS_DBG + 2) << "Set birth time of " << *val << "\n";
+          LOG_S(IS_DBG + 2) << " >>> " << step << " " << EI.valid << "\n";
         }
 
         //When a value is fed back in a loop, we artificially add use time = valid time
@@ -363,8 +363,8 @@ bool InstructionScheduler::isBranchSchedulable(Instruction * brInst, float curre
                   bool isBackEdge = (LI.isLoopHeader(succ) && (LI.getLoopFor(parentBlock) == LI.getLoopFor(succ)));
                   auto valid = isBackEdge?(ceil(VIM[val].valid.time) - 1.0):VIM[val].valid.time;
                   dependency_valid = std::max<float>(dependency_valid, valid);
-                  LOG_S(INFO) << "Back value " << val->getName() << "\n";
-                  LOG_S(INFO) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
+                  LOG_S(IS_DBG + 2) << "Back value " << val->getName() << "\n";
+                  LOG_S(IS_DBG + 2) << "Valid time " << VIM[val].valid.time << " " << valid << "\n";
                 }
               }
             }
@@ -437,10 +437,20 @@ void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
   auto &VIM               = CDI_h->valueInfoMap;
   auto &LI                = CDI_h->getLoopInfo();
   auto loops              = LI.getLoopsInPreorder();
-  LOG_S(INFO) << "Loop cnt: " << loops.size() << "\n";
+  LOG_S(IS_DBG) << "Loop cnt: " << loops.size() << "\n";
   llvm::Loop *loop        = LI.getLoopFor(parentBlock);
   bool isLoopLatch        = false;
   isLoopLatch = (loop && loop->isLoopLatch(parentBlock)); 
+  
+  //This function handles values that are fed back in a loop (BACKVALUE)
+  //It looks at the latch block of the loop
+  //Then it gets the header of the loop 
+  //From the header block of the loop it iterates the PHIs instruction 
+  //It then iterates the incoming values and blocks of the PHIs instruction 
+  //When the incoming block is the latch block, this value is a back value 
+  //Then it updates this value use time. 
+  //By convention, the PHIs instruction is executed 1 clock cycle afater the branch back instruction 
+  //So the new use time of the BACKVALUE is branch's execution step + 1.0
   if (isLoopLatch) {
     BasicBlock* header  = loop->getHeader();
     //Iterate Phis of header 
@@ -455,35 +465,24 @@ void InstructionScheduler::updateBackValueUseTime(Instruction* brInst)
           if (phiInst->getIncomingBlock(i) == parentBlock)
           {
             Value* val = phiInst->getIncomingValue(i);
-            assert(VIM.count(val) > 0);
+            assert("Weird!!! can't find the value, value has not been scheduled" && VIM.count(val) > 0);
             auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
             VIM[val].addUseTime(use_time);
-            LOG_S(INFO) << "Updated use time of back value: " << val->getName() << " --> " << use_time << "\n";
+            LOG_S(IS_DBG + 1) << "Updated use time of back value: " << val->getName() << " --> " << use_time << "\n";
           }
         }
       }
     }
   }
-
-  // for(Instruction  &I : parentBlock->getInstList())
-  // {
-  //   if ((&I) == brInst) continue;
-  //   if (isBackValue((Value*)&I))
-  //   {
-  //     assert(VIM.count(&I) > 0);
-  //     auto use_time = floor(VIM[(Value*)brInst].schedule.time) + 1.0;
-  //     VIM[&I].addUseTime(use_time);
-  //     LOG_S(INFO) << "Updated use time of back value: " << I.getName() << " --> " << use_time << "\n";
-  //   }
-  // }
 }
 
 bool InstructionScheduler::isMemoryInstSchedulable(Instruction * memInstr, float current_step)
 {
   auto &VIM               = CDI_h->valueInfoMap;
-  auto &DM                = CDI_h->dependencyMap;
+  auto &DM                = CDI_h->getDependenceInfoMap();
   float  dependency_valid = current_step;
-  //Additional condition for branch instruction
+  
+  //The dependency of memory instruction has to be taken from the DependenceInfo Map from parent object 
   assert("Instruction is not memory instruction" && isMemoryInstruction(memInstr));
 
   auto & depInfo = DM[static_cast<Value*>(memInstr)];
@@ -496,6 +495,7 @@ bool InstructionScheduler::isMemoryInstSchedulable(Instruction * memInstr, float
       LOG_S(IS_DBG + 2) << getBriefInfo(item.first) << "Not found \n";
       break;
     }
+    //Select which time to use dependent on what type of dependency
     if (item.second == DependenceType::Valid)
       dependency_valid = std::max<float>(dependency_valid, VIM[item.first].valid.time);
     else 

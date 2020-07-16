@@ -89,7 +89,7 @@ void ControlDataInfo::dumpDependencyMap()
 {
   LOG_S(0) <<"---------------------------------" << "\n";
   LOG_S(0) <<"Dependency" << "\n";
-  for(auto item : this->dependencyMap)
+  for(auto item : this->depInfoMap)
   {
     LOG_S(0) << item.second.repr();
   }

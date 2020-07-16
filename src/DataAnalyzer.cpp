@@ -19,7 +19,7 @@
 #include "IRUtil.hpp"
 
 #ifndef  DA_DBG 
-#define  DA_DBG 0
+#define  DA_DBG 9
 #endif 
 
 using namespace hdbe;
@@ -95,14 +95,6 @@ void DataAnalyzer::analyze(Module * irModule, Function * irFunction)
     }
   }
 
-  /*LOG(DA_DBG, "memory operations");
-  for(auto I = memObjList.begin(), E = memObjList.end(); I!=E; ++I)
-  {
-    LOG_S(DA_DBG + 1) << *(I->getIrValue()) << "\n";
-  }*/
-  //auto &memSSA    = CDI_h->getMemorySSA();
-  //LOG_S(INFO) << "Memory SSA \n";
-  //memSSA.dump();
   analyzeMemoryDependency();
 
   LOG_DONE(INFO);
@@ -470,9 +462,17 @@ void DataAnalyzer::analyzeMemoryDependency()
 {
   auto &memObjList = CDI_h->memObjList;
   auto &DT         = CDI_h->getDominatorTree();
-  auto &DM         = CDI_h->dependencyMap;
+  auto &DM         = CDI_h->getDependenceInfoMap();
   auto &DI         = CDI_h->getDependenceInfo();
-  //First pass generate Dependence for each instruction 
+  
+  /////////////////////////////////////////////////////////////////////////////////////////////////////
+  //First pass generate DependenceInfo for each instruction 
+  //Note that at this stage, the memObjList should already be populated 
+  //The memObjList holds set of memory component, either internal or external 
+  //The each memory component holds a collection of relevant memory operations
+  //So by iterating the memory component, we only consider the memory instructions that are related 
+  //(accessing same base Pointer)
+  //This is a critical difference in the memory model between HDBE and LLVM
   for(auto &item : memObjList)
   {
     LOG_S(DA_DBG) << "Memory: " << item.getName() << " has : \n";
@@ -484,6 +484,7 @@ void DataAnalyzer::analyzeMemoryDependency()
 
   for(auto &item : memObjList)
   {
+    LOG_S(INFO) << "Analyzing dependency of instructions related to: " << item.getName() << "\n";
     LOG_S(DA_DBG) << "Memory: " << item.getName() << " has : \n";
     for(auto *inst : item.memInstrList)
     {

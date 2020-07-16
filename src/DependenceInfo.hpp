@@ -25,6 +25,16 @@ using BasicBlock = llvm::BasicBlock;
 using String = std::string;
 
 namespace hdbe {
+
+/*
+  Instruction A depends on Instruction B for the purpose of scheduling
+  There are 2 types of dependence that we're concerned about 
+  Valid    : B is required to be Valid for A to be scheduled
+  Schedule : B is required to be scheduled for A to be scheduled. For example: 
+             s1 = load(XX) (A instruction)
+             store(s2, YY) (B instruction), XX and YY is unknown at compile time and can be the same address location
+             Due to the latency of the instruction, A and B can be executed in the same cycle 
+*/
 enum class DependenceType {
   Valid        = 0,
   Schedule     = 1,

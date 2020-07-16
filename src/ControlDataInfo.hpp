@@ -47,6 +47,9 @@ class ControlDataInfo {
   using LoopInfo    = llvm::LoopInfo;
   using MemorySSA   = llvm::MemorySSA;
   
+  using ValueInfoMapType = std::map<Value*, ValueLifeInfo>;
+  using DependenceInfoMapType = std::map<Value*, DependenceInfo>;
+
   friend class DataAnalyzer;
   friend class VerilogGenerator;
   friend class InstructionScheduler;
@@ -63,9 +66,9 @@ class ControlDataInfo {
     std::list<HdlState    > stateList;    
     std::list<HdlCFGEdge  > transitionList;    
     std::map<Hashcode, HdlCFGEdge*> edgeMap;    
-    std::map<Value*, ValueLifeInfo> valueInfoMap;
-    std::map<Value*, DependenceInfo> dependencyMap;
-    HardwareDescription     HWD;
+    ValueInfoMapType                valueInfoMap;
+    DependenceInfoMapType           depInfoMap;
+    HardwareDescription             HWD;
 
 
     //Construct Pass builder 
@@ -102,8 +105,11 @@ class ControlDataInfo {
     }
 
     inline auto addDependenceInfo(Value* val) {
-      return dependencyMap.insert(std::pair<Value*, DependenceInfo>(val, DependenceInfo(val)));
+      return depInfoMap.insert(std::pair<Value*, DependenceInfo>(val, DependenceInfo(val)));
     }
+
+    DependenceInfoMapType & getDependenceInfoMap() {return depInfoMap;}
+    ValueInfoMapType      & getValueInfoMap() {return valueInfoMap;}
 
     HdlState&   getInstructionState(Instruction* I);
     HdlCFGEdge& findCFGEdge(BasicBlock* src, BasicBlock* dst);
@@ -111,11 +117,13 @@ class ControlDataInfo {
     void        addCFGEdge(HdlCFGEdge& edge);
     unsigned    getPointerSizeInBits() {const DataLayout & DL = this->irModule->getDataLayout(); return DL.getPointerSizeInBits();} 
     
+    //Helper to return analysis results done by LLVM
     llvm::LoopInfo & getLoopInfo()  {return FAM.getResult<llvm::LoopAnalysis>(*irFunction);}
     llvm::MemorySSA& getMemorySSA() {return FAM.getResult<llvm::MemorySSAAnalysis>(*irFunction).getMSSA();}
     llvm::MemoryDependenceResults & getMemoryDependenceResults() {return FAM.getResult<llvm::MemoryDependenceAnalysis>(*irFunction);}
     llvm::DominatorTree & getDominatorTree() {return FAM.getResult<llvm::DominatorTreeAnalysis>(*irFunction);}
     llvm::DependenceInfo & getDependenceInfo() {return FAM.getResult<llvm::DependenceAnalysis>(*irFunction);}
+    
     void dumpStateList();
     void dumpValueInfoMap();
     void dumpDependencyMap();

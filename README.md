@@ -8,10 +8,11 @@ Installation and required dependency
 - Build and install llvm-project, this builds clang and other libraries which are statically linked into HDBE
 - Checkout and install Verilator from : https://www.veripool.org/wiki/verilator. Verilator is used in simulation of the generated Verilog. The HDBE includes several examples for quick regression test and evaluation of how HDBE works. The examples are built using gcc/clang/verilator
 - Build and add hdbe executable into your path
-- Go to example, go to any of the example: 
-+ make clean -f ../ex.mak
-+ make sim -f ../ex.mak
-The script would compile c file into .ll file then generate .sv file. It then uses verilator to simulate the model with the testbench written in example/<example_name>/verilator.
-This is a work in progress and only a subset of C constructs are supported.
+- Go to examples/<any_example>: 
+  - make clean -f ../ex.mak
+  - make sim -f ../ex.mak
+
+The script would compile the c file into .ll file then generate .sv file. It then uses verilator to simulate the model with the testbench written in example/<example_name>/verilator.
+This is a work in progress and only a subset of C constructs are supported. You can go through individual example to see what can be done.
 It's quite fun to DIY HSL. 
 

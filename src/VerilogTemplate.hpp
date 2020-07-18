@@ -79,4 +79,5 @@ end //" __name "\n")
 #define MEMOBJ_RADDR(obj) (obj.name + "_raddr")
 #define MEMOBJ_WADDR(obj) (obj.name + "_waddr")
 
+#define FUNC_CLK_NET "func_clk"
 

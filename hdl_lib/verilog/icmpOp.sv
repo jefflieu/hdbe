@@ -1,7 +1,7 @@
 
 
 module icmpOp #(
- parameter ParamOpCode = "none",
+ parameter ParamOpCode = "n2345678",
  parameter ParamBitWidth = 32
 ) (
   input  bit clk,

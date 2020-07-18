@@ -370,6 +370,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
   char buf[256];
   unsigned size = 0;
   int schedule_time = floor(VIM[static_cast<Value*>(I)].getScheduledTime());
+  int valid_time    = floor(VIM[static_cast<Value*>(I)].getValidTime());
   size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
   String opcodeString = String(buf, size);
 
@@ -380,68 +381,47 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
 
   auto phi = static_cast<llvm::PHINode*>(I);
   auto N = phi->getNumIncomingValues();
-
-  size = sprintf(buf,"%10sOp #(", "PHINode");
-  instantiate += String(buf, size);     
-  size = sprintf(buf,"%10d,", static_cast<llvm::PHINode*>(I)->getNumIncomingValues());
-  instantiate += String(buf, size); 
-  size = sprintf(buf,"%6d)", phi->getType()->getIntegerBitWidth());
-  instantiate += String(buf, size);
-
-  size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(I));
-  instantiate += String(buf, size);
-  size = sprintf(buf,"func_clk, ");
-  instantiate += String(buf, size);   
-  
+  HDLInstance phiInstance("PHINodeOp", reinterpret_cast<uintptr_t>(I));
+  phiInstance.setParam(static_cast<llvm::PHINode*>(I)->getNumIncomingValues());
+  phiInstance.setParam(phi->getType()->getIntegerBitWidth());
+  phiInstance.setPort(FUNC_CLK_NET);
   String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(schedule_time);
-  size = sprintf(buf,"%s,\n", activeCycle.data());
-  instantiate += String(buf, size);
-  
-  String tag = CYCLE_TAG(schedule_time);
+  phiInstance.setPort(activeCycle);
 
-  size = sprintf(buf,"%s%s%s,\n", space.data(), I->getName().data(), &tag[0]);  
-  instantiate += String(buf, size); 
-  for(int i = 0; i < 16; i++)
+  String output = getValueHdlName(I) + CYCLE_TAG(valid_time);
+  phiInstance.setPort(output);
+  for(int i = 0; i < N; i++)
   {
-    if (i < N) {
-      llvm::BasicBlock* blk = phi->getIncomingBlock(i);
-      llvm::Value* val = phi->getIncomingValue(i);
-      HdlCFGEdge& edge = CDI_h->findCFGEdge(blk, phi->getParent());
-      String edgeName = edge.getName().str();
-      String valName = getValueHdlName(val);
-      
-      if (!edge.isBackEdge()) {
-        edgeName += tag;
-      } else {
-        edgeName += LOOP_TAG;
-      }
-      //The only way to query if Value is a BackValue here is using combination of this condition
-      if (!edge.isBackEdge() || !llvm::Instruction::classof(val)) {
-        valName += tag;
-      } else {
-        int edgeValidTime = floor(VIM[edge.getIrValue()].getValidTime());
-        valName += LOOP_TAG;
-        loop_assign += INDENT(1) + VERILOG_ASSIGN_STATEMENT + valName + VERILOG_CONT_ASSIGN + getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1) + VERILOG_ENDL;
-      }
-
-      size = sprintf(buf, "%s{ %-10s, %-20s}", space.data(), edgeName.data(), valName.data());
-      instantiate += String(buf, size);
-    } else if (i == N) {
-      size = sprintf(buf, "%s ", space.data());
-      instantiate += String(buf, size);
+    llvm::BasicBlock* blk = phi->getIncomingBlock(i);
+    llvm::Value* val = phi->getIncomingValue(i);
+    HdlCFGEdge& edge = CDI_h->findCFGEdge(blk, phi->getParent());
+    String edgeName = edge.getName().str();
+    String valName = getValueHdlName(val);
+    if (!edge.isBackEdge()) {
+      edgeName += CYCLE_TAG(schedule_time);
     } else {
-      instantiate += String("0");
+      edgeName += LOOP_TAG;
     }
-    if (i < N) instantiate += ",\n"; else 
-    if (i < 15) instantiate += ","; else instantiate += ");\n"; 
-
+    if (!edge.isBackEdge() || !llvm::Instruction::classof(val)) {
+      valName += CYCLE_TAG(schedule_time);
+    } else {
+      int edgeValidTime = floor(VIM[edge.getIrValue()].getValidTime());
+      valName += LOOP_TAG;
+      loop_assign += INDENT(1) + VERILOG_ASSIGN_STATEMENT + valName + VERILOG_CONT_ASSIGN + getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1) + VERILOG_ENDL;
+    }
+    String port = "{" + edgeName + "," + valName + "}";
+    phiInstance.setPort(port);
   }
+  phiInstance.setPortOthers(0, 16 - N);
+ 
+  instantiate  = phiInstance.getInstanceString(this);
   instantiate += loop_assign; 
   return instantiate;  
 } 
 
 String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
 {
+  HDLInstance *instance;
   String instantiate;
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   char buf[256];
@@ -449,66 +429,56 @@ String VerilogGenerator::writeSimpleInstruction(llvm::Instruction* I)
   int schedule_time = floor(VIM[static_cast<Value*>(I)].getScheduledTime());
   float valid_time = VIM[static_cast<Value*>(I)].valid.time;
   size = sprintf(buf, "\"%8s\"", I->getOpcodeName());
-  // String opcodeString = "\"" + String(I->getOpcodeName()) + pad + "\"";
   String opcodeString = String(buf, size);
+  
+  /** 
+    The common structure of those components are: 
+      Parameter: Opcode
+      Parameter: BithWidth 
+      Ports : Clk, Enable, Input0 ... Inputn, Output
+  */
   if (llvm::BinaryOperator::classof(I)) {    
-    size = sprintf(buf,"%10sOp #(", "Binary");
-    instantiate += String(buf, size);     
-    size = sprintf(buf,"%10s,", opcodeString.data() );
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", I->getOperand(0)->getType()->getIntegerBitWidth());
-    instantiate += String(buf, size); 
+    instance = new HDLInstance("BinaryOp", reinterpret_cast<uintptr_t>(I));
+    instance->setParam(opcodeString);
+    instance->setParam(I->getOperand(0)->getType()->getIntegerBitWidth());
+
   } else if (llvm::CmpInst::classof(I)) {
-    size = sprintf(buf,"%10sOp #(", I->getOpcodeName());
-    instantiate += String(buf, size);
+    instance = new HDLInstance( ( String(I->getOpcodeName()) + "Op"), reinterpret_cast<uintptr_t>(I));
     Twine predNameString = "\"" + llvm::CmpInst::getPredicateName( (static_cast<llvm::CmpInst*>(I))->getPredicate()) + "\"";
-    size = sprintf(buf,"%10s,", predNameString.str().data());
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", I->getOperand(0)->getType()->getIntegerBitWidth());
-    instantiate += String(buf, size);
+    instance->setParam(predNameString.str());
+    instance->setParam(I->getOperand(0)->getType()->getIntegerBitWidth());
+
   } else if (llvm::CastInst::classof(I)) {
-    size = sprintf(buf,"%10sOp #(", "Cast");
-    instantiate += String(buf, size);
-    size = sprintf(buf,"%10s,", opcodeString.data() );
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d,", I->getOperand(0)->getType()->getIntegerBitWidth());
-    instantiate += String(buf, size);
-    size = sprintf(buf,"%6d)", I->getType()->getIntegerBitWidth());
-    instantiate += String(buf, size);
+    instance = new HDLInstance( ("CastOp"), reinterpret_cast<uintptr_t>(I));
+    instance->setParam(opcodeString);
+    instance->setParam(I->getOperand(0)->getType()->getIntegerBitWidth());
+    instance->setParam(I->getType()->getIntegerBitWidth());
+  
   } else if (llvm::PHINode::classof(I) || llvm::SwitchInst::classof(I) ||llvm::BranchInst::classof(I)) {
-    
+     return String("/* empty */");
+  
   } else {  
-    size = sprintf(buf,"%10sOp #(", I->getOpcodeName());
-    instantiate += String(buf, size);
-    size = sprintf(buf,"%10s,", opcodeString.data() );
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", I->getType()->getIntegerBitWidth());
-    instantiate += String(buf, size); 
-    //size = sprintf(buf,"#(.BITWIDTH (%d))n", I->getType()->getIntegerBitWidth());
-    //instantiate += String(buf, size); 
+    instance = new HDLInstance( (String(I->getOpcodeName()) + "Op"), reinterpret_cast<uintptr_t>(I));
+    instance->setParam(opcodeString);
+    //instance->setParam(I->getOperand(0)->getType()->getIntegerBitWidth());
+    instance->setParam(I->getType()->getIntegerBitWidth()); 
   }  
-  size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(I));
-  instantiate += String(buf, size); 
-  size = sprintf(buf,"func_clk, ");
-  instantiate += String(buf, size);   
   
-  //size = sprintf(buf,"%s, ", state.getName().data());
-  //
+  instance->setPort(FUNC_CLK_NET);
+  
   String activeCycle = I->getParent()->getName().str() + CYCLE_TAG(schedule_time);
-  size = sprintf(buf,"%s, ", activeCycle.data());
-  instantiate += String(buf, size);
+  instance->setPort(activeCycle);
   
-  String execute_tag = CYCLE_TAG(schedule_time);
   for(const llvm::Use &use : I->operands())
     { 
-      size = sprintf(buf,"%s%s, ", getValueHdlName(use.get()).data(), &execute_tag[0]);
-      instantiate += String(buf, size); 
+      String input_net = getValueHdlName(use.get()) + CYCLE_TAG(schedule_time);
+      instance->setPort(input_net);
     }
 
-  String valid_tag = CYCLE_TAG(static_cast<int>(valid_time));
-  size = sprintf(buf,"%s%s );\n", I->getName().data(), &valid_tag[0]);  
-  instantiate += String(buf, size);   
-  return instantiate;  
+  String output_net = getValueHdlName(I) + CYCLE_TAG(static_cast<int>(valid_time));
+  instance->setPort(output_net);
+
+  return instance->getInstanceString(this);  
 };
 
 Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
@@ -731,15 +701,24 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   String GEP;
   String load_assign;
   String load_op_instantiate;
-  String raddr_mux_map = "func_clk, " + MEMOBJ_RADDR(memObj);
-  String waddr_mux_map = "func_clk, " + MEMOBJ_WADDR(memObj);
-  String wdat_mux_map  = "func_clk, " + MEMOBJ_WDATA(memObj);
   String rden_assign;
   String wren_assign;
   unsigned ld_cnt = 0;
   unsigned st_cnt = 0;
   char buf[256];
   unsigned size = 0;
+
+  HDLInstance load_raddr_instance( String("DataMux"), String("RAddr_of_" + memObj.name) ); 
+  load_raddr_instance.setPort(String(FUNC_CLK_NET));
+  load_raddr_instance.setPort(String(MEMOBJ_RADDR(memObj)));
+  
+  HDLInstance store_waddr_instance( String("DataMux"), String("WAddr_of_" + memObj.name) ); 
+  store_waddr_instance.setPort(String(FUNC_CLK_NET));
+  store_waddr_instance.setPort(String(MEMOBJ_WADDR(memObj)));
+  
+  HDLInstance store_wdata_instance( String("DataMux"), String("WData_of_" + memObj.name) ); 
+  store_wdata_instance.setPort(String(FUNC_CLK_NET));
+  store_wdata_instance.setPort(String(MEMOBJ_WDATA(memObj)));
   
   //Writing Load 
   for(auto instr_i = memObj.memInstrList.begin(), instr_end = memObj.memInstrList.end(); instr_i!=instr_end; ++instr_i)
@@ -753,40 +732,37 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
     {
       case llvm::Instruction::Load:
           {
-          //load_assign += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + valid_tag + VERILOG_CONT_ASSIGN + MEMOBJ_RDATA(memObj) + VERILOG_ENDL;
-          size = sprintf(buf,"%10s #(", "loadOp");
-          load_op_instantiate += String(buf, size);     
-          size = sprintf(buf,"%6d,", (*instr_i)->getType()->getIntegerBitWidth());
-          load_op_instantiate += String(buf, size); 
-          size = sprintf(buf,"%6d)", 1);
-          load_op_instantiate += String(buf, size); 
-          size = sprintf(buf," I%lx ( ", reinterpret_cast<uintptr_t>(*instr_i));
-          load_op_instantiate += String(buf, size); 
-          size = sprintf(buf,"func_clk, ");
-          load_op_instantiate += String(buf, size);   
-          
+          HDLInstance load_op_instance( String("loadOp"), String("I" + llvm::utohexstr(reinterpret_cast<uintptr_t>(*instr_i))) ); 
+          load_op_instance.setParam((*instr_i)->getType()->getIntegerBitWidth());
+          load_op_instance.setParam(1);
+          load_op_instance.setPort(String(FUNC_CLK_NET));
           String activeCycle = getValueHdlName((*instr_i)->getParent()) + tag0;
-          size = sprintf(buf,"%s, ", activeCycle.data());
-          load_op_instantiate += String(buf, size);
-          
-          String mem_rdata_port = MEMOBJ_RDATA(memObj);
-          size = sprintf(buf,"%s, ", mem_rdata_port.data());
-          load_op_instantiate += String(buf, size); 
+          load_op_instance.setPort(activeCycle);
+          load_op_instance.setPort(MEMOBJ_RDATA(memObj));
+          String outputVar = (*instr_i)->getName().str() + valid_tag;
+          load_op_instance.setPort(outputVar);
 
-          size = sprintf(buf,"%s%s );\n", (*instr_i)->getName().data(), &valid_tag[0]);  
-          load_op_instantiate += String(buf, size);   
+          load_op_instantiate += load_op_instance.getInstanceString(this); 
 
-          raddr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
           rden_assign  += String((ld_cnt > 0)?"|":"") + getValueHdlName((*instr_i)->getParent()) + tag0;
+          
+          String raddr_mux_input =  "{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          load_raddr_instance.setPort(raddr_mux_input);
+
           ld_cnt++;
           break;
           }
       case llvm::Instruction::Store:
-          waddr_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
-          wdat_mux_map += " ,{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          {
+          String waddr_mux_input = "{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(1)) + tag0 + "}";
+          store_waddr_instance.setPort(waddr_mux_input);
+          String wdat_mux_input = "{" + getValueHdlName((*instr_i)->getParent()) + tag0 + ", " + getValueHdlName((*instr_i)->getOperand(0)) + tag0 + "}";
+          store_wdata_instance.setPort(wdat_mux_input);
+
           wren_assign  += String((st_cnt > 0)?"|":"") + getValueHdlName((*instr_i)->getParent()) + tag0;
           st_cnt++;
           break;
+          }
       case llvm::Instruction::GetElementPtr:
           //Very naive handling of GEP
           GEP += VERILOG_ASSIGN_STATEMENT + (*instr_i)->getName().str() + tag0 + VERILOG_CONT_ASSIGN + getValueHdlName((*instr_i)->getOperand(1)) + tag0;
@@ -805,63 +781,28 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   instantiate += GEP;
   instantiate += load_op_instantiate;
   if (ld_cnt > 0) {
-    size = sprintf(buf,"%10s #(", "DataMux");
-    instantiate += String(buf, size);     
-    size = sprintf(buf,"%6d,", ld_cnt);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d,", ptrSize);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", memObj.property.arraylength);
-    instantiate += String(buf, size);
+    load_raddr_instance.setParam(ld_cnt);
+    load_raddr_instance.setParam(ptrSize);
+    load_raddr_instance.setParam(memObj.property.arraylength);
+    load_raddr_instance.setPortOthers(0, 16 - ld_cnt);
+    instantiate += load_raddr_instance.getInstanceString(this);
 
-    size = sprintf(buf," RAddr_of_%s ( ", memObj.name.data());
-    instantiate += String(buf, size);
-    instantiate += raddr_mux_map;
-    for(unsigned i = ld_cnt; i < 16; i++)
-    {
-      instantiate += ",0";
-    }
-    instantiate += ");\n";
+    
   }
 
   if (st_cnt > 0) {
     //Write Address mux
-    size = sprintf(buf,"%10s #(", "DataMux");
-    instantiate += String(buf, size);     
-    size = sprintf(buf,"%6d,", st_cnt);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d,", ptrSize);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", memObj.property.arraylength);
-    instantiate += String(buf, size);
+    store_waddr_instance.setParam(st_cnt);
+    store_waddr_instance.setParam(ptrSize);
+    store_waddr_instance.setParam(memObj.property.arraylength);
+    store_waddr_instance.setPortOthers(0, 16 - st_cnt);
+    instantiate += store_waddr_instance.getInstanceString(this);
 
-    size = sprintf(buf," WAddr_of_%s ( ", memObj.name.data());
-    instantiate += String(buf, size);
-    instantiate += waddr_mux_map;
-    for(unsigned i = st_cnt; i < 16; i++)
-    {
-      instantiate += ",0";
-    }
-    instantiate += ");\n";
-    
-    //Write data mux
-    size = sprintf(buf,"%10s #(", "DataMux");
-    instantiate += String(buf, size);     
-    size = sprintf(buf,"%6d,", st_cnt);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d,", memObj.property.bitwidth);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", memObj.property.bitwidth);
-    instantiate += String(buf, size);
-
-    size = sprintf(buf," Wdata_of_%s ( ", memObj.name.data());
-    instantiate += String(buf, size);
-    instantiate += wdat_mux_map;
-    for(unsigned i = st_cnt; i < 16; i++)
-    {
-      instantiate += ",0";
-    }
-    instantiate += ");\n";
+    store_wdata_instance.setParam(st_cnt);
+    store_wdata_instance.setParam(memObj.property.bitwidth);
+    store_wdata_instance.setParam(memObj.property.bitwidth);
+    store_wdata_instance.setPortOthers(0, 16 - st_cnt);
+    instantiate += store_wdata_instance.getInstanceString(this);
 
     
   }
@@ -875,29 +816,23 @@ String VerilogGenerator::writeMemoryObject(HdlMemory &memObj)
   //Write memory 
   if (memObj.property.stype == HdlSignalType::regType)
   {
-    //Write data mux
-    size = sprintf(buf,"%10s #(", "Memory");
-    instantiate += String(buf, size);     
-    size = sprintf(buf,"%6d,", memObj.property.arraylength);
-    instantiate += String(buf, size); 
-    size = sprintf(buf,"%6d)", memObj.property.bitwidth);
-    instantiate += String(buf, size);
+    HDLInstance memory_instance( String("Memory"), String("memory_" + memObj.name));
+    memory_instance.setParam(memObj.property.arraylength);
+    memory_instance.setParam(memObj.property.bitwidth);
+    memory_instance.setPort(FUNC_CLK_NET);
+    memory_instance.setPort(MEMOBJ_WREN(memObj));
+    memory_instance.setPort(MEMOBJ_WADDR(memObj));
+    memory_instance.setPort(MEMOBJ_WDATA(memObj));
+    memory_instance.setPort(MEMOBJ_RDEN(memObj));
+    memory_instance.setPort(MEMOBJ_RADDR(memObj));
+    memory_instance.setPort(MEMOBJ_RDATA(memObj));
 
-    size = sprintf(buf," memory_%s ( ", memObj.name.data());
-    instantiate += String(buf, size);
-    instantiate += "func_clk,";
-    instantiate += " " + MEMOBJ_WREN(memObj)  + ",";
-    instantiate += " " + MEMOBJ_WADDR(memObj) + ",";
-    instantiate += " " + MEMOBJ_WDATA(memObj) + ",";
-    
-    instantiate += " " + MEMOBJ_RDEN(memObj)  + ",";
-    instantiate += " " + MEMOBJ_RADDR(memObj) + ",";
-    instantiate += " " + MEMOBJ_RDATA(memObj);
-
-    instantiate += ");\n";
+    instantiate += memory_instance.getInstanceString(this);
   }
 
   String ret = VERILOG_CODE_SECTION(memObj.name);
   ret += instantiate;
   return ret;
 }
+
+

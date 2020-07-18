@@ -29,6 +29,8 @@ begin //"  __name "\n\n")
 always_comb \n\
 begin //"  __name "\n\n")
 
+#define VERILOG_ALWAYS_CLK_BLK(NAME, CLK) ("always_ff@(posedge " + CLK + ") \nbegin //" + NAME + "\n\n")
+#define VERILOG_ALWAYS_COMB_BLK(NAME) ("always_comb() \nbegin //" + NAME + "\n\n")
 
 #define VERILOG_RANGE(a, b) ("[" + std::to_string(a) + ":" + std::to_string(b) + "]")
 
@@ -46,7 +48,7 @@ begin //"  __name "\n\n")
 end //" __name "\n")
 
 #define VERILOG_PORTMAP(portstr, varstr)  std::to_string("." + portstr + " ( " + varstr + ")")
-#define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::to_string('[') + std::to_string(idx) + std::to_string(']'))
+#define VERILOG_ARRAY_INDEX(namestr, idx) (namestr + std::string("[") + std::to_string(idx) + std::string("]"))
 
 #define VERILOG_ASSIGN_STATEMENT  "assign "
 #define VERILOG_LOGICAL_AND       " && "
@@ -62,8 +64,9 @@ end //" __name "\n")
 #define VERILOG_BEGIN             "begin\n"
 #define VERILOG_END               "end\n"
 #define VERILOG_COMMENT           "//"
+#define VERILOG_SIGNAL_CONCAT(a, b) ("{" + a + "," + b + "}")
 
-#define VERILOG_CODE_SECTION(a) String("\n\n/*\n") + String(a) + String("\n*/\n")
+#define VERILOG_CODE_SECTION(a) String("/*\n") + String(a) + String("\n*/\n")
 
 #define CYCLE_TAG(n)  ("_" + std::to_string(n))
 #define VALID_TAG      "_valid"
@@ -79,5 +82,9 @@ end //" __name "\n")
 #define MEMOBJ_RADDR(obj) (obj.name + "_raddr")
 #define MEMOBJ_WADDR(obj) (obj.name + "_waddr")
 
-#define FUNC_CLK_NET "func_clk"
+#define FUNC_CLK_NET   "func_clk"
+#define FUNC_START_NET "func_start"
+#define FUNC_DONE_NET  "func_done"
+#define FUNC_RET_NET   "func_ret"
+
 

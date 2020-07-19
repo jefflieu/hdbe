@@ -398,6 +398,8 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
   std::map<llvm::Value*, ValueLifeInfo> &VIM = CDI_h->valueInfoMap;
   std::list<HdlVariable>& variableList       = CDI_h->variableList;
   std::list<HdlCFGEdge >& transitionList     = CDI_h->transitionList;
+  llvm::LoopInfo & LI = CDI_h->getLoopInfo();
+  auto loops = LI.getLoopsInPreorder();
 
   HDLSequentialBlock registerBlock("register_stage", FUNC_CLK_NET); 
 
@@ -408,9 +410,12 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
     int use_time   = floor(VIM[var_i->getIrValue()].getLatestUseTime());
     for(int i = valid_time + 1; i <= use_time; ++i)
     {
-      //assign += var_i->name + CYCLE_TAG(i) + VERILOG_ASSIGN + var_i->name + CYCLE_TAG(i-1) + VERILOG_ENDL;
       HDLIdentifier dst = var_i->name + CYCLE_TAG(i);
-      HDLIdentifier src = var_i->name + CYCLE_TAG(i-1);
+      HDLIdentifier src;
+      if (loops.size() > 0 && Instruction::classof(var_i->getIrValue()))
+        src = var_i->name + CYCLE_TAG(valid_time);
+      else 
+        src = var_i->name + CYCLE_TAG(i-1);
       HDLNonblockingAssign* assignment = new HDLNonblockingAssign(dst, src);
       registerBlock.addStatement(assignment);
     }
@@ -425,10 +430,8 @@ Ostream& VerilogGenerator::writeRegisterStages(Ostream& os)
     int use_time    = floor(VIM[var_i->getDestBB()].getLatestUseTime());    
     for(uint32_t i = valid_time + 1; i <= use_time; i++)
       {
-        String tag1 = CYCLE_TAG(i);
-        String tag0 = CYCLE_TAG(i-1);
-        HDLIdentifier dst = var_i->name + tag1;
-        HDLIdentifier src = var_i->name + tag0;
+        HDLIdentifier dst = var_i->name + CYCLE_TAG(i);
+        HDLIdentifier src = var_i->name + CYCLE_TAG(i-1);
         HDLNonblockingAssign* transition_assignment = new HDLNonblockingAssign(dst, src);
         transitionBlock.addStatement(transition_assignment);
       }

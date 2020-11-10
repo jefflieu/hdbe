@@ -1,0 +1,56 @@
+
+scale_factor : 1.0
+bitwidth     : 32
+
+#Latency is normalized by clock period.
+
+add:
+  latency : 0.1    
+sub: 
+  latency : 0.1
+mul: 
+  latency : 0.5
+xor:
+  latency : 0.1
+and:
+  latency : 0.1
+or:
+  latency : 0.1
+xor:
+  latency : 0.1
+trunc:
+  latency : 0.0
+zext:
+  latency : 0.0
+sext:
+  latency : 0.0
+icmp:
+  latency : 0.2
+select:
+  latency : 0.1
+ret:
+  latency : 0.0
+switch:
+  latency : 0.1
+br:
+  latency : 0.0  
+phi:
+  latency : 0.1  
+load:
+  latency : 1.0
+store:
+  latency : 1.0  
+shl:
+  latency : 0.3  
+lshr:
+  latency : 0.3
+ashr:
+  latency : 0.3
+getelementptr:
+  latency : 0.0  
+fadd:
+  latency : 5.0
+  units   : 2
+fmul:
+  latency : 5.0
+  units   : 2  

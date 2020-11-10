@@ -6,7 +6,6 @@ find_package(LLVM REQUIRED CONFIG)
 set(hdlbe_src ../src/)
 
 
-
 message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
 message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 message(STATUS "Using LLVM_DEFINITIONS   : ${LLVM_DEFINITIONS}")
@@ -31,7 +30,7 @@ add_executable(hdbe hdbe.cpp )
 llvm_map_components_to_libnames(llvm_libs support core irreader analysis passes)
 
 # Link against LLVM libraries
-target_link_libraries(hdbe ${llvm_libs} )
+target_link_libraries(hdbe ${llvm_libs} yaml-cpp)
 target_sources(hdbe PUBLIC      
     ${hdlbe_src}/IRUtil.cpp
     ${hdlbe_src}/HDLUtil.cpp

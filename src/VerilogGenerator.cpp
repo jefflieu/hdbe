@@ -313,10 +313,13 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
     } else {
       
       int edgeValidTime = floor(VIM[edge.getIrValue()].getValidTime());
-      valName += LOOP_TAG;
-      HDLConcurrentAssign loop_variable_assign(valName);
-      loop_variable_assign.setRHS(getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1));
-      loop_assign += loop_variable_assign.generateCode(this);
+      int valueValidTime = floor(VIM[val].getValidTime());
+      valName += CYCLE_TAG(edgeValidTime + 1);
+      //No longer use _loop variable, use directly the value itself
+      //HDLConcurrentAssign loop_variable_assign(valName);
+      //loop_variable_assign.setRHS(getValueHdlName(val) + CYCLE_TAG(edgeValidTime + 1));
+      //loop_assign += loop_variable_assign.generateCode(this);
+      //loop_assign += "//\n";
     
     }
     String port = "{" + edgeName + "," + valName + "}";
@@ -325,7 +328,7 @@ String VerilogGenerator::writePHIInstruction(llvm::Instruction* I)
   phiInstance.setPortOthers(0, 16 - N);
  
   instantiate  = phiInstance.generateCode(this);
-  instantiate += loop_assign; 
+  
   return instantiate;  
 } 
 
@@ -523,6 +526,7 @@ auto fileName = F->getName().str().data();
 int size;
 
 size = sprintf(buf,"\n\n\
+//synthesis translate_off\n\
 initial begin \n\
   if ($test$plusargs(\"trace\") != 0) begin \n\
     $display(\"[%%0t] Tracing to logs/%s.vcd...\", $time); \n\
@@ -530,7 +534,8 @@ initial begin \n\
     $dumpvars(); \n\
   end \n\
   $display(\"[%%0t] Model running...\", $time);\n\
-end\n\n", 
+end\n\
+//synthesis translate_on\n\n",
   fileName, fileName
   );
   String str = String(buf, size);  

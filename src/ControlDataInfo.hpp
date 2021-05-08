@@ -7,6 +7,7 @@
 
 #include <typeinfo> 
 
+#include "llvm/Analysis/MemorySSA.h"
 #include "llvm/Analysis/DependenceAnalysis.h"
 #include "llvm/Analysis/MemoryDependenceAnalysis.h"
 

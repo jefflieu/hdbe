@@ -4,7 +4,7 @@ It parses the IR and tries to understand what's the objective of the code and ge
 
 Installation and required dependency
 
-- Checkout latest llvm from https://github.com/llvm/llvm-project
+- Checkout latest llvm from https://github.com/llvm/llvm-project. Please check out version 11.0.0.
 - Build and install llvm-project, this builds clang and other libraries which are statically linked into HDBE
 - Checkout and install Verilator from : https://www.veripool.org/wiki/verilator. Verilator is used in simulation of the generated Verilog. The HDBE includes several examples for quick regression test and evaluation of how HDBE works. The examples are built using gcc/clang/verilator
 - Build and install yaml-cpp project from https://github.com/jbeder/yaml-cpp. This will build yaml-cpp.a static library and install headers into your usr/local/include path

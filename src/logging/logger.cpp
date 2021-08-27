@@ -10,7 +10,8 @@ llvm::raw_ostream& hdbe::_log_stderr = llvm::errs();
 llvm::raw_ostream& hdbe::LOG_S(int level) {
   start_of_line = llvm::outs().tell();
   std::string lvl;
-  llvm::outs().changeColor(Colors::BLACK); 
+  //llvm::outs().changeColor(Colors::BLACK); 
+  llvm::outs().resetColor(); 
                   
   switch(level)
   {

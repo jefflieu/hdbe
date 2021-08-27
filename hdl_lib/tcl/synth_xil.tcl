@@ -1,7 +1,7 @@
 set TOPLEVEL [lindex $argv 0]
 
 #Part number is somewhat arbitrary
-set PART xcku3p-ffva676-3-e
+set PART xczu5eg-fbvb900-2-e
 
 create_project -force project proj/project -part $PART
 set_property target_language Verilog [current_project]

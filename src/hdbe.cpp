@@ -74,5 +74,6 @@ int main(int argc, char **argv) {
   
   
   LOG(INFO, "Program ends .. "); 
+  llvm::outs().resetColor();
   return 0;
 }
